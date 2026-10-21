@@ -52,6 +52,95 @@ type CreateDocEngineOptions = {
   onError: (err: unknown) => void
 }
 
+/** Every PresentationEditor parks its real ProseMirror editor in one of these, under <body>. */
+const HIDDEN_HOST_WRAPPER = 'presentation-editor__hidden-host-wrapper'
+/** The extra class on the hidden hosts of header/footer and footnote sessions. */
+const STORY_HOST_WRAPPER = 'presentation-editor__story-hidden-host-wrapper'
+/** SuperDoc's declarative "this is not a stray editor, leave its input alone". */
+const UI_SURFACE = 'data-editor-ui-surface'
+
+/** The slice of SuperDoc's PresentationEditor this file reads, all public API. */
+type PresentationLike = {
+  editor?: EditorLike
+  getActiveEditor?: () => EditorLike
+  on?: (event: string, fn: () => void) => void
+  off?: (event: string, fn: () => void) => void
+}
+type EditorLike = { view?: { dom?: Element | null } | null } | null | undefined
+
+/** The facade's `activeEditor` points at the editor; its presentation hangs off it. */
+function presentationOf(editor: unknown): PresentationLike | null {
+  if (!editor || typeof editor !== 'object') return null
+  const candidate = editor as PresentationLike & { presentationEditor?: PresentationLike | null }
+  if (typeof candidate.getActiveEditor === 'function') return candidate
+  return candidate.presentationEditor ?? null
+}
+
+/**
+ * Keep keystrokes in the window they were typed in when several SuperDoc
+ * instances share the page, as Docs windows do on the desktop.
+ *
+ * Each instance's PresentationInputBridge listens on `window` in the capture
+ * phase (`useWindowFallback: true`, hard-coded in PresentationEditor's
+ * `#setupInputBridge`, not an option). Its `#resolveStaleEditorOrigin` reads
+ * any `.ProseMirror[contenteditable="true"]` that is not its own active editor
+ * as its own stale one, so it pulls focus back to its editor and swallows the
+ * key: typing in one window reached none. Before that test it returns early for
+ * events inside a UI surface (`isInRegisteredSurface`: an element carrying
+ * `data-editor-ui-surface`, the declarative half of uiSurfaceRegistry.ts; the
+ * WeakSet half, `registerUiSurface`, is not exported). So the wrapper holding
+ * this instance's active editor carries the marker, and every other instance
+ * leaves its input alone.
+ *
+ * The marker follows the active editor rather than sitting on every wrapper:
+ * while a header/footer or footnote session is open, the body's wrapper goes
+ * unmarked, because the bridge's own rerouting of keystrokes from a body editor
+ * that kept native focus into the open session is what that stale test is for.
+ * The instance's own bridge never needed the marker on its active editor
+ * (`#isEventOnActiveTarget` answers first), so in body mode nothing it does
+ * changes.
+ *
+ * With one SuperDoc on the page nothing is marked at all. The attribute has
+ * readers besides the bridge (the format painter's keyboard-selection handler,
+ * and the selection overlay's "focus is on editor UI" check, which is why a
+ * Docs window that loses focus to another keeps painting its caret), and a
+ * lone window has no one to steal its keystrokes, so it behaves exactly as
+ * SuperDoc ships it.
+ *
+ * Re-synced when the active surface changes and whenever <body>'s children
+ * change: hidden hosts are added and removed there as instances and story
+ * sessions come and go, and switching between two headers emits no surface
+ * change. Returns the teardown.
+ */
+function keepInputInItsWindow(presentation: PresentationLike, doc: Document): () => void {
+  let marked: Element | null = null
+  const wrapperOf = (editor: EditorLike) =>
+    editor?.view?.dom?.closest?.(`.${HIDDEN_HOST_WRAPPER}`) ?? null
+  const sync = () => {
+    const instances = doc.querySelectorAll(
+      `.${HIDDEN_HOST_WRAPPER}:not(.${STORY_HOST_WRAPPER})`
+    ).length
+    const next =
+      instances > 1
+        ? (wrapperOf(presentation.getActiveEditor?.()) ?? wrapperOf(presentation.editor))
+        : null
+    if (marked && marked !== next) marked.removeAttribute(UI_SURFACE)
+    next?.setAttribute(UI_SURFACE, '')
+    marked = next
+  }
+  const surfaceEvents = ['activeSurfaceChange', 'headerFooterModeChanged']
+  surfaceEvents.forEach((event) => presentation.on?.(event, sync))
+  const observer = new MutationObserver(sync)
+  observer.observe(doc.body, { childList: true })
+  sync()
+  return () => {
+    observer.disconnect()
+    surfaceEvents.forEach((event) => presentation.off?.(event, sync))
+    marked?.removeAttribute(UI_SURFACE)
+    marked = null
+  }
+}
+
 export async function createDocEngine(opts: CreateDocEngineOptions): Promise<DocEngine> {
   // SuperDoc's stylesheet is not imported here: the suite's build refuses CSS
   // imported from JS. apps/docs/package.json declares it as a vendor stylesheet,
@@ -61,6 +150,7 @@ export async function createDocEngine(opts: CreateDocEngineOptions): Promise<Doc
 
   let readyFired = false
   let editCount = 0
+  let releaseInput: (() => void) | null = null
   const superdoc: SuperDocClass = new SuperDoc({
     selector: opts.editor,
     toolbar: opts.toolbar,
@@ -77,6 +167,10 @@ export async function createDocEngine(opts: CreateDocEngineOptions): Promise<Doc
     onReady: () => {
       if (!readyFired) {
         readyFired = true
+        const presentation = presentationOf(superdoc.activeEditor)
+        if (presentation) {
+          releaseInput = keepInputInItsWindow(presentation, opts.editor.ownerDocument)
+        }
         opts.onReady()
       }
     },
@@ -115,6 +209,8 @@ export async function createDocEngine(opts: CreateDocEngineOptions): Promise<Doc
     html: () => (superdoc.getHTML() ?? []).join('\n'),
     editCount: () => editCount,
     destroy: () => {
+      releaseInput?.()
+      releaseInput = null
       try {
         superdoc.destroy()
       } catch {
