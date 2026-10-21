@@ -1,12 +1,19 @@
 /*
- * PROVISIONAL. Written by `npm run kit:sync` from imbatranimOS 3d7382535c18410204073d0e15c331a014531929,
- * whose kit has no theme.css yet: this is the @theme block of
- * apps/core/src/index.css at that commit. OS brief 163 moves the block to
- * packages/ui/src/theme.css; the first kit:sync after that copies the kit's
- * own file into src/ and deletes this one.
+ * The desktop's design tokens (brief 163: moved here from apps/core/src/index.css,
+ * no value changed). They live in the kit because a marketplace kit app builds
+ * its utilities against these names and resolves them to the desktop's CSS
+ * variables at runtime: an outside repo snapshots this file with the rest of
+ * packages/ui/src.
+ *
+ * `static`: every token below is emitted as a CSS variable whether or not the
+ * desktop's own classes use it. A kit app's stylesheet may reference a token
+ * the desktop never does, and that variable must still exist.
+ *
+ * The values point at runtime variables the desktop's index.css sets: --k-*
+ * per theme ([data-theme] on <html>) and --accent / --accent-on.
  */
-@theme {
-  /* Surfaces + text — resolved from the active theme block below */
+@theme static {
+  /* Surfaces + text — resolved from the active theme block (index.css) */
   --color-surface: var(--k-surface);
   --color-surface-dim: var(--k-surface-dim);
   --color-surface-bright: var(--k-surface-bright);

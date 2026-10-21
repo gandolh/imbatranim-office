@@ -6,9 +6,10 @@ import { Scanner } from '@tailwindcss/oxide'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { compileAppCss } from './appCss.ts'
 import { checkUtilitiesOnly, parseCss } from './cssRule.ts'
+import { readKitSnapshot } from './kitSnapshot.ts'
 
 const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
-const theme = join(repoRoot, 'vendor', 'imbatranim-ui', 'theme.provisional.css')
+const theme = readKitSnapshot(join(repoRoot, 'vendor', 'imbatranim-ui')).themeCss
 
 // Tailwind resolves `tailwindcss/*` from the stylesheet's base, so the scratch
 // app lives inside the repo (node_modules/.tmp is ignored by git and the linters).

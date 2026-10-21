@@ -1,10 +1,19 @@
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { checkUtilitiesOnly } from './cssRule.ts'
+import { readKitSnapshot } from './kitSnapshot.ts'
 import { appStylePaths, discoverApps, osBuildConfig } from './osBuild.ts'
 import { BARE_SHARED_IMPORT } from './sharedKit.ts'
 
@@ -200,18 +209,41 @@ describe("this repo's own build", () => {
     return [...seen].map((f) => readFileSync(join(out, f), 'utf8')).join('\n')
   }
 
-  it('builds the smoke app to the acceptance shape', () => {
-    const mjs = readFileSync(join(out, 'smoke', 'app.mjs'), 'utf8')
-    const css = readFileSync(join(out, 'smoke', 'app.css'), 'utf8')
-    const all = loaded('smoke/app.mjs')
-    expect(all).not.toMatch(BARE_SHARED_IMPORT)
-    // Minified: sharedExport is a one-letter function, its arguments stay readable.
-    // With two apps, the reads they share sit in a chunk both import.
-    expect(all).toMatch(/\w\("@imbatranim\/ui", "ConfirmDialog"\)/)
-    expect(all).toMatch(/\w\("react\/jsx-runtime", "jsx"\)/)
-    expect(mjs).toMatch(/new URL\("\.\.\/workers\/lines\.worker-[\w-]+\.mjs", import\.meta\.url\)/)
-    expect(checkUtilitiesOnly(css)).toEqual([])
-    expect(css).not.toMatch(/--color-[\w-]+:/)
+  it('matches os/descriptor.template.json: one entry per app, its entry and styles emitted', () => {
+    type TemplateApp = { id: string; entry: string; styles: string[] }
+    const template = JSON.parse(
+      readFileSync(join(repoRoot, 'os', 'descriptor.template.json'), 'utf8')
+    ) as {
+      sharedKit: number
+      build: { install: string[]; command: string[]; output: string }
+      apps: TemplateApp[]
+    }
+    const apps = discoverApps(repoRoot)
+    expect(template.apps.map((a) => a.entry).sort()).toEqual(
+      apps.map((a) => `${a.name}/app.mjs`).sort()
+    )
+    for (const app of apps) {
+      const entry = template.apps.find((a) => a.entry === `${app.name}/app.mjs`)!
+      expect(entry.id).toBe(`office-${app.name}`)
+      expect(entry.styles, entry.id).toEqual(appStylePaths(app))
+      for (const file of [entry.entry, ...entry.styles]) {
+        expect(existsSync(join(out, file)), file).toBe(true)
+      }
+    }
+    // The build the OS runs is this one, writing where the descriptor says it does.
+    expect(template.build).toEqual({
+      install: ['npm', 'ci'],
+      command: ['npm', 'run', 'build:os'],
+      output: 'dist/os',
+    })
+    const outDir = osBuildConfig({ root: repoRoot }).build?.outDir ?? ''
+    expect(relative(repoRoot, outDir).split('\\').join('/')).toBe(template.build.output)
+    const pkg = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')) as {
+      scripts: Record<string, string>
+    }
+    expect(pkg.scripts['build:os']).toBe('vite build')
+    // Built against the snapshot's kit version, which the desktop checks.
+    expect(template.sharedKit).toBe(readKitSnapshot(vendorDir).sharedKitVersion)
   })
 
   it("builds Docs with SuperDoc loaded on first open and SuperDoc's stylesheet beside it", () => {
@@ -225,6 +257,8 @@ describe("this repo's own build", () => {
     expect(all).not.toMatch(BARE_SHARED_IMPORT)
     expect(all).not.toMatch(/\bprocess\.env\b/)
     expect(all).toMatch(/\w\("@imbatranim\/ui", "useOpenIntent"\)/)
+    // Minified: sharedExport is a one-letter function, its arguments stay readable.
+    expect(all).toMatch(/\w\("react\/jsx-runtime", "jsx"\)/)
     // SuperDoc's style.css, as the built-in loaded it, under the vendor rule.
     const [docs] = discoverApps(repoRoot).filter((a) => a.name === 'docs')
     expect(appStylePaths(docs)).toEqual(['docs/app.css', 'docs/superdoc.css'])
@@ -232,6 +266,8 @@ describe("this repo's own build", () => {
       readFileSync(docs.vendorStyles[0].path)
     )
     expect(docs.vendorStyles[0].path).toMatch(/@harbour-enterprises\/superdoc\/dist\/style\.css$/)
-    expect(checkUtilitiesOnly(readFileSync(join(out, 'docs', 'app.css'), 'utf8'))).toEqual([])
+    const css = readFileSync(join(out, 'docs', 'app.css'), 'utf8')
+    expect(checkUtilitiesOnly(css)).toEqual([])
+    expect(css).not.toMatch(/--color-[\w-]+:/)
   })
 })

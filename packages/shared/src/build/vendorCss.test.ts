@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
+import { readKitSnapshot } from './kitSnapshot.ts'
 import { checkVendorCss, desktopVariables, readVendorStyles } from './vendorCss.ts'
 
 const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
@@ -14,7 +15,7 @@ const superdocCss = createRequire(join(repoRoot, 'apps', 'docs', 'package.json')
 )
 const isDesktopVariable = desktopVariables([
   readFileSync(require.resolve('tailwindcss/theme.css'), 'utf8'),
-  readFileSync(join(repoRoot, 'vendor', 'imbatranim-ui', 'theme.provisional.css'), 'utf8'),
+  readFileSync(readKitSnapshot(join(repoRoot, 'vendor', 'imbatranim-ui')).themeCss, 'utf8'),
 ])
 
 const kinds = (css: string, ownAttributes: string[] = []) =>

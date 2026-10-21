@@ -86,6 +86,11 @@ export type {
 } from './system'
 export { SystemProvider, useSystem } from './systemContext'
 
+// The shared kit (brief 163): what a marketplace kit app reads from the
+// desktop at runtime instead of bundling, and the props it is rendered with.
+export { SHARED_KIT_MODULES, SHARED_KIT_VERSION } from './sharedKit'
+export type { KitAppProps, NativeHostContext, SharedKitModule } from './sharedKit'
+
 // Capability-consuming SDK hooks — the old core hooks, re-homed onto the
 // handle. No windowId arguments: the handle already knows its window.
 export {
