@@ -1,0 +1,4 @@
+/* An app may not bring tokens of its own: this must fail the build. */
+@theme {
+  --color-brand: #ff0000;
+}

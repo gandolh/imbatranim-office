@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo"
+  },
+  "include": ["apps/*/src", "packages/shared/src", "packages/shared/test/fixtures"],
+  "exclude": ["packages/shared/src/build"]
+}

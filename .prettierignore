@@ -1,0 +1,6 @@
+# The kit snapshot is the OS's bytes; formatting it would break kit:sync --check.
+vendor
+dist
+corpus
+package-lock.json
+LICENSE

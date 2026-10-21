@@ -1,0 +1,2 @@
+/* A second preflight would reset the desktop's own elements: this must fail the build. */
+@import 'tailwindcss/preflight.css' layer(base);

@@ -1,0 +1,63 @@
+/*
+ * PROVISIONAL. Written by `npm run kit:sync` from imbatranimOS 3d7382535c18410204073d0e15c331a014531929,
+ * whose kit has no theme.css yet: this is the @theme block of
+ * apps/core/src/index.css at that commit. OS brief 163 moves the block to
+ * packages/ui/src/theme.css; the first kit:sync after that copies the kit's
+ * own file into src/ and deletes this one.
+ */
+@theme {
+  /* Surfaces + text — resolved from the active theme block below */
+  --color-surface: var(--k-surface);
+  --color-surface-dim: var(--k-surface-dim);
+  --color-surface-bright: var(--k-surface-bright);
+  --color-surface-container-lowest: var(--k-surface-container-lowest);
+  --color-surface-container-low: var(--k-surface-container-low);
+  --color-surface-container: var(--k-surface-container);
+  --color-surface-container-high: var(--k-surface-container-high);
+  --color-surface-container-highest: var(--k-surface-container-highest);
+  --color-on-surface: var(--k-on-surface);
+  --color-on-surface-variant: var(--k-on-surface-variant);
+  --color-inverse-surface: var(--k-inverse-surface);
+  --color-inverse-on-surface: var(--k-inverse-on-surface);
+  --color-outline: var(--k-outline);
+  --color-outline-variant: var(--k-outline-variant);
+  --color-background: var(--k-surface);
+  --color-on-background: var(--k-on-surface);
+  --color-surface-variant: var(--k-surface-container-high);
+
+  /* Accent — the single parameterized identity color */
+  --color-surface-tint: var(--accent);
+  --color-primary: var(--accent);
+  --color-on-primary: var(--accent-on);
+  --color-primary-container: var(--accent);
+  --color-on-primary-container: var(--accent-on);
+  --color-inverse-primary: var(--accent);
+  --color-heritage: var(--accent);
+
+  /* Secondary / tertiary collapse to neutral — the palette is B&W + one accent */
+  --color-secondary: var(--k-on-surface-variant);
+  --color-on-secondary: var(--k-surface);
+  --color-secondary-container: var(--k-surface-container-high);
+  --color-on-secondary-container: var(--k-on-surface);
+  --color-tertiary: var(--k-on-surface-variant);
+  --color-on-tertiary: var(--k-surface);
+  --color-tertiary-container: var(--k-surface-container-high);
+  --color-on-tertiary-container: var(--k-on-surface);
+
+  /* Error stays a restrained functional red (usability > purity) */
+  --color-error: var(--k-error);
+  --color-on-error: #ffffff;
+  --color-error-container: var(--k-error-container);
+  --color-on-error-container: var(--k-on-error-container);
+
+  /* Fonts — kept from the fork: Space Grotesk (UI) + Inter (content) */
+  --font-ui: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-content: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* Spacing */
+  --spacing-half: 4px;
+  --spacing-base: 8px;
+  --spacing-double: 16px;
+  --spacing-window-padding: 12px;
+  --spacing-container-gap: 8px;
+}

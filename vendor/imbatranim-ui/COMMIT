@@ -1,0 +1,7 @@
+# vendor/imbatranim-ui/src is packages/ui/src of imbatranimOS at this commit, byte for byte.
+# Written by `npm run kit:sync -- <os-checkout> <commit>`; do not edit by hand.
+# SHARED_KIT_VERSION=absent: the kit at this commit exports none (OS brief 163 adds it).
+# theme: the token file the CSS build reads, relative to this directory.
+commit=3d7382535c18410204073d0e15c331a014531929
+SHARED_KIT_VERSION=absent
+theme=theme.provisional.css
