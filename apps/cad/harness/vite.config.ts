@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import { compile, optimize } from '@tailwindcss/node'
 import { Scanner } from '@tailwindcss/oxide'
-import { appCssSource } from '../../../packages/shared/src/build/index.ts'
+import { appCssSource, readKitSnapshot } from '../../../packages/shared/src/build/index.ts'
 
 const root = fileURLToPath(new URL('../../..', import.meta.url))
 
@@ -54,7 +54,7 @@ async function harnessCss(): Promise<string> {
     appCssSource({
       appDir,
       sources: [join(root, 'apps/cad/src'), join(root, 'vendor/imbatranim-ui/src')],
-      themeCss: join(root, 'vendor/imbatranim-ui/theme.provisional.css'),
+      themeCss: readKitSnapshot(join(root, 'vendor/imbatranim-ui')).themeCss,
     })
   const compiler = await compile(source, { base: appDir, onDependency: () => {} })
   const sources = compiler.sources.map((s) => ({ ...s, negated: false }))
