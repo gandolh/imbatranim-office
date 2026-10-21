@@ -1,0 +1,17 @@
+{
+  "name": "@imbatranim-office/pdf",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "description": "PDF: read, search, annotate, fill, organise and sign PDFs. Merges the OS's built-in PDF Viewer and norPDF (apps/add-ons/pdf-viewer and apps/add-ons/norpdf at 56e23b7).",
+  "dependencies": {
+    "@imbatranim-office/shared": "0.0.0",
+    "@pdfcore/engine": "1.0.0",
+    "lucide-react": "1.24.0",
+    "pdfjs-dist": "6.1.200"
+  },
+  "devDependencies": {
+    "pdf-lib": "1.17.1"
+  }
+}

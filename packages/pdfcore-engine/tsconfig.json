@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // The engine's own settings at imbatranimOS 56e23b7 (packages/tsconfig.base.json):
+    // it runs in Node for its tests, and was checked a step stricter than the apps.
+    "types": ["node"],
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "forceConsistentCasingInFileNames": true,
+    "tsBuildInfoFile": "../../node_modules/.tmp/tsconfig.pdfcore-engine.tsbuildinfo"
+  },
+  "include": ["src"]
+}

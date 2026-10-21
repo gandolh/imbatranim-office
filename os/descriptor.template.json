@@ -112,6 +112,28 @@
       "multiInstance": true,
       "capabilities": ["fs", "intents", "notify"],
       "styles": ["sheets/app.css", "sheets/univer.css"]
+    },
+    {
+      "id": "office-pdf",
+      "name": "PDF",
+      "description": "Read, annotate, fill in, sign and organise PDF documents",
+      "meta": ["pdf", "document", "read", "reader", "view", "search", "annotate", "forms", "sign"],
+      "entry": "pdf/app.mjs",
+      "window": {
+        "defaultSize": {
+          "w": 1040,
+          "h": 560
+        },
+        "minSize": {
+          "w": 680,
+          "h": 420
+        }
+      },
+      "icon": "file-pen",
+      "opens": ["pdf"],
+      "multiInstance": true,
+      "capabilities": ["fs", "intents", "notify"],
+      "styles": ["pdf/app.css"]
     }
   ],
   "minSystemVersion": 2

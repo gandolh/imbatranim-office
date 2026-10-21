@@ -1,0 +1,49 @@
+{
+  "name": "@pdfcore/engine",
+  "version": "1.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "description": "The PDF engine (pdf-lib for writes, pdf.js for reads), isomorphic. Moved from imbatranimOS packages/pdfcore-engine at 56e23b7 with PDF (brief 06).",
+  "exports": {
+    ".": {
+      "node": {
+        "types": "./src/index.node.ts",
+        "default": "./src/index.node.ts"
+      },
+      "browser": {
+        "types": "./src/index.browser.ts",
+        "default": "./src/index.browser.ts"
+      },
+      "default": {
+        "types": "./src/index.browser.ts",
+        "default": "./src/index.browser.ts"
+      }
+    },
+    "./node": {
+      "types": "./src/index.node.ts",
+      "default": "./src/index.node.ts"
+    },
+    "./browser": {
+      "types": "./src/index.browser.ts",
+      "default": "./src/index.browser.ts"
+    },
+    "./worker": {
+      "types": "./src/browser/pdf-worker.ts",
+      "default": "./src/browser/pdf-worker.ts"
+    }
+  },
+  "imports": {
+    "#pdfjs": {
+      "node": "pdfjs-dist/legacy/build/pdf.mjs",
+      "default": "pdfjs-dist"
+    }
+  },
+  "dependencies": {
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "6.1.200"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "1.0.2"
+  }
+}
