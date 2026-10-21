@@ -1,0 +1,11 @@
+/* Restyles the desktop: a bare element rule and a desktop token on :root. This must fail the build. */
+.lib-ok {
+  color: red;
+}
+p {
+  margin: 0;
+}
+:root {
+  --spacing: 2px;
+  --lib-gap: 4px;
+}

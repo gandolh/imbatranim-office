@@ -1,0 +1,9 @@
+{
+  "name": "fixture-bad-vendor-global",
+  "private": true,
+  "imbatranimOffice": {
+    "vendorStyles": {
+      "lib.css": "./lib/lib.css"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@imbatranim-office/docs",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "description": "Docs: edit .docx documents with SuperDoc. Moved from the OS's built-in apps/add-ons/docs.",
+  "dependencies": {
+    "@harbour-enterprises/superdoc": "1.45.0",
+    "@imbatranim-office/shared": "0.0.0",
+    "fflate": "0.4.8",
+    "lucide-react": "1.24.0"
+  },
+  "imbatranimOffice": {
+    "vendorStyles": {
+      "superdoc.css": {
+        "from": "@harbour-enterprises/superdoc/style.css",
+        "ownAttributes": [
+          "data-tippy-root"
+        ]
+      }
+    }
+  }
+}

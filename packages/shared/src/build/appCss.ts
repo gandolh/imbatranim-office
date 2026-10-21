@@ -14,11 +14,18 @@
  * CSS, so the kit's buttons and dialogs are styled before any app sheet loads.
  */
 import { existsSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { dirname, join, relative, sep } from 'node:path'
 import { compile, optimize } from '@tailwindcss/node'
 import { Scanner } from '@tailwindcss/oxide'
 import type { Plugin } from 'vite'
 import { checkUtilitiesOnly, type CssRuleProblem } from './cssRule.ts'
+import {
+  checkVendorCss,
+  describeVendorProblems,
+  desktopVariables,
+  type VendorStyle,
+} from './vendorCss.ts'
 
 export type AppCssInput = {
   /** The app's directory, `apps/<name>`; relative paths in its CSS resolve from here. */
@@ -80,12 +87,19 @@ export function describeProblems(file: string, problems: CssRuleProblem[]): stri
   ].join('\n')
 }
 
-export type StyledApp = { name: string; dir: string }
+export type StyledApp = {
+  name: string
+  dir: string
+  /** The library stylesheets the app declares (vendorCss.ts), copied beside app.css. */
+  vendorStyles?: readonly VendorStyle[]
+}
 
 /**
  * Emit `<app>/app.css` for every app, and fail the build if one breaks the CSS
  * rule or if any other stylesheet is emitted (CSS imported from JS would reach
- * the page without the check).
+ * the page without the check). Then copy each declared vendor stylesheet to
+ * `<app>/<file>`, failing the build if it would restyle the desktop outside the
+ * window (`checkVendorCss`).
  */
 export function appStyles(options: {
   apps: readonly StyledApp[]
@@ -99,6 +113,12 @@ export function appStyles(options: {
     // After Vite's own CSS plugin, which emits imported CSS in its generateBundle.
     enforce: 'post',
     async generateBundle(_output, bundle) {
+      // What the desktop's theme is made of: Tailwind's (resolved as the app
+      // stylesheets resolve it) and the kit's tokens.
+      const isDesktopVariable = desktopVariables([
+        readFileSync(createRequire(import.meta.url).resolve('tailwindcss/theme.css'), 'utf8'),
+        readFileSync(options.themeCss, 'utf8'),
+      ])
       for (const file of Object.values(bundle)) {
         if (file.fileName.endsWith('.css')) {
           this.error(
@@ -123,6 +143,19 @@ export function appStyles(options: {
         const problems = checkUtilitiesOnly(css)
         if (problems.length > 0) this.error(describeProblems(fileName, problems))
         this.emitFile({ type: 'asset', fileName, source: css })
+
+        for (const vendor of app.vendorStyles ?? []) {
+          const vendorFile = `${app.name}/${vendor.fileName}`
+          const vendorCss = readFileSync(vendor.path) // copied as it is, byte for byte
+          const vendorProblems = checkVendorCss(vendorCss.toString('utf8'), {
+            isDesktopVariable,
+            ownAttributes: vendor.ownAttributes,
+          })
+          if (vendorProblems.length > 0) {
+            this.error(describeVendorProblems(vendorFile, vendor.specifier, vendorProblems))
+          }
+          this.emitFile({ type: 'asset', fileName: vendorFile, source: vendorCss })
+        }
       }
     },
   }

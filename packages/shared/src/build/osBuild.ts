@@ -6,6 +6,7 @@
  *
  *   dist/os/<app>/app.mjs      exports App, the component the desktop renders
  *   dist/os/<app>/app.css      the app's Tailwind utilities (appCss.ts)
+ *   dist/os/<app>/<lib>.css    each library stylesheet the app declares (vendorCss.ts)
  *   dist/os/chunks/*.mjs       code two or more entries share
  *   dist/os/workers/*.mjs      each `new Worker(new URL('./x.ts', import.meta.url))`
  *
@@ -19,6 +20,7 @@ import { appStyles } from './appCss.ts'
 import { readSharedExports } from './exportNames.ts'
 import { readKitSnapshot } from './kitSnapshot.ts'
 import { BARE_SHARED_IMPORT, noSharedKitInWorkers, sharedKitExternals } from './sharedKit.ts'
+import { readVendorStyles, type VendorStyle } from './vendorCss.ts'
 
 export type OsApp = {
   /** The directory name under `apps/`, and the output directory under `dist/os/`. */
@@ -27,13 +29,17 @@ export type OsApp = {
   dir: string
   /** `apps/<name>/src/App.tsx`, the module the desktop imports. */
   entry: string
+  /** Library stylesheets from `imbatranimOffice.vendorStyles` in its package.json. */
+  vendorStyles: VendorStyle[]
 }
 
 const APP_NAME = /^[a-z][a-z0-9-]*$/
 
 /**
  * Every `apps/<name>` that has `src/App.tsx` is an app: adding a workspace
- * with that file is all it takes to add one to the build.
+ * with that file is all it takes to add one to the build. Its vendor
+ * stylesheets are read and resolved here, so a bad declaration fails before
+ * anything is built.
  */
 export function discoverApps(root: string): OsApp[] {
   const appsDir = join(root, 'apps')
@@ -45,9 +51,22 @@ export function discoverApps(root: string): OsApp[] {
         throw new Error(`apps/${d.name}: an app directory is lowercase letters, digits and "-"`)
       }
       const dir = join(appsDir, d.name)
-      return { name: d.name, dir, entry: join(dir, 'src', 'App.tsx') }
+      return {
+        name: d.name,
+        dir,
+        entry: join(dir, 'src', 'App.tsx'),
+        vendorStyles: readVendorStyles(dir, d.name),
+      }
     })
     .sort((a, b) => (a.name < b.name ? -1 : 1))
+}
+
+/**
+ * What the descriptor lists as the app's `styles`, paths inside `dist/os`:
+ * `app.css` first, then the vendor stylesheets in their declared order.
+ */
+export function appStylePaths(app: Pick<OsApp, 'name' | 'vendorStyles'>): string[] {
+  return [`${app.name}/app.css`, ...app.vendorStyles.map((v) => `${app.name}/${v.fileName}`)]
 }
 
 /** Checks on the finished bundle that would otherwise surface as a broken window. */
@@ -126,8 +145,14 @@ export function osBuildConfig(options: OsBuildOptions): UserConfig {
       }),
     ],
     // Library mode leaves process.env alone for a consumer's bundler; here the
-    // browser is the consumer, and bundled libraries read NODE_ENV.
-    define: { 'process.env.NODE_ENV': JSON.stringify('production') },
+    // browser is the consumer, and bundled libraries read NODE_ENV. Anything
+    // else they read from it (SuperDoc's bundled terminal-colour helpers read
+    // FORCE_COLOR, behind a check for Node) reads an empty object, as the
+    // browser would see if it had one.
+    define: {
+      'process.env.NODE_ENV': JSON.stringify('production'),
+      'process.env': '{}',
+    },
     worker: {
       format: 'es',
       plugins: () => [noSharedKitInWorkers()],

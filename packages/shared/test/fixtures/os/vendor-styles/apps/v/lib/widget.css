@@ -1,0 +1,32 @@
+/* A library's own stylesheet: its variables on :root (its popups live in <body>),
+   everything else on its own classes, Vue-scoped elements and declared attribute. */
+:root {
+  --wd-accent: #1355ff;
+  --wd-gap: 4px;
+}
+.wd-toolbar {
+  display: flex;
+  gap: var(--wd-gap);
+}
+.wd-toolbar button:hover {
+  color: var(--wd-accent);
+}
+img[data-v-1a2b3c4d] {
+  max-width: 100%;
+}
+[data-widget-root] {
+  max-width: calc(100vw - 10px);
+}
+@media (max-width: 600px) {
+  .wd-toolbar {
+    flex-wrap: wrap;
+  }
+}
+@keyframes wd-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.wd-icon {
+  background: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg'/>");
+}

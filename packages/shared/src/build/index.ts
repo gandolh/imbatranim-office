@@ -12,6 +12,7 @@ export {
   type KitSnapshot,
 } from './kitSnapshot.ts'
 export {
+  appStylePaths,
   discoverApps,
   osBuildConfig,
   osOutputChecks,
@@ -30,3 +31,11 @@ export {
   type SharedExports,
   type SharedSpecifier,
 } from './sharedKit.ts'
+export {
+  MAX_VENDOR_STYLES,
+  checkVendorCss,
+  desktopVariables,
+  describeVendorProblems,
+  readVendorStyles,
+  type VendorStyle,
+} from './vendorCss.ts'

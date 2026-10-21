@@ -19,11 +19,16 @@
  */
 
 export type CssRuleProblem = {
-  kind: 'preflight' | 'token' | 'not-utilities'
+  /**
+   * `preflight`, `token` and `not-utilities` come from {@link checkUtilitiesOnly};
+   * `global`, `external` and `unsupported` from the vendor rule (vendorCss.ts),
+   * which reports `token` too.
+   */
+  kind: 'preflight' | 'token' | 'not-utilities' | 'global' | 'external' | 'unsupported'
   detail: string
 }
 
-type CssNode =
+export type CssNode =
   | { type: 'at'; name: string; prelude: string; children: CssNode[] | null }
   | { type: 'rule'; selector: string; children: CssNode[] }
   | { type: 'decl'; property: string; value: string }

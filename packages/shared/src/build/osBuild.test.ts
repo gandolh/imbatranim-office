@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { build } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { checkUtilitiesOnly } from './cssRule.ts'
-import { discoverApps, osBuildConfig } from './osBuild.ts'
+import { appStylePaths, discoverApps, osBuildConfig } from './osBuild.ts'
 import { BARE_SHARED_IMPORT } from './sharedKit.ts'
 
 const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
@@ -103,7 +103,57 @@ describe('the OS build of a two-app suite', () => {
   })
 })
 
+describe('vendor stylesheets', () => {
+  let out: string
+  beforeAll(async () => {
+    out = await buildRepo(join(fixtures, 'vendor-styles'))
+  }, 60_000)
+
+  it('copies each declared stylesheet beside app.css, byte for byte', () => {
+    expect(files(out).filter((f) => f.startsWith('v/'))).toEqual([
+      'v/app.css',
+      'v/app.mjs',
+      'v/extra.css',
+      'v/widget.css',
+    ])
+    for (const name of ['widget.css', 'extra.css']) {
+      expect(readFileSync(join(out, 'v', name))).toEqual(
+        readFileSync(join(fixtures, 'vendor-styles', 'apps', 'v', 'lib', name))
+      )
+    }
+    // app.css stays utilities only: the vendor's classes are not compiled into it.
+    const appCss = readFileSync(join(out, 'v', 'app.css'), 'utf8')
+    expect(checkUtilitiesOnly(appCss)).toEqual([])
+    expect(appCss).not.toContain('wd-toolbar')
+  })
+
+  it("lists app.css and then the vendor sheets, in declared order, as the descriptor's styles", () => {
+    const [app] = discoverApps(join(fixtures, 'vendor-styles'))
+    expect(appStylePaths(app)).toEqual(['v/app.css', 'v/widget.css', 'v/extra.css'])
+    expect(app.vendorStyles[0]).toMatchObject({
+      specifier: './lib/widget.css',
+      ownAttributes: ['data-widget-root'],
+    })
+    expect(app.vendorStyles[1].ownAttributes).toEqual([])
+  })
+
+  it('replaces process.env, so a guarded read in bundled code never reaches the browser', () => {
+    const mjs = readFileSync(join(out, 'v', 'app.mjs'), 'utf8')
+    expect(mjs).not.toMatch(/\bprocess\.env\b/)
+    expect(mjs).toContain('FORCE_COLOR')
+    // process.env.NODE_ENV is still "production", not a read of the empty object.
+    expect(mjs).toContain('"production"')
+    expect(mjs).not.toContain('NODE_ENV')
+  })
+})
+
 describe('the OS build fails', () => {
+  it('when a vendor stylesheet would restyle the desktop', async () => {
+    await expect(buildRepo(join(fixtures, 'bad-vendor-global'))).rejects.toThrow(
+      /g\/lib\.css \(\.\/lib\/lib\.css\) would restyle the desktop[\s\S]*global: "p"[\s\S]*token: ":root" sets the desktop's --spacing/
+    )
+  })
+
   it('when an app stylesheet defines a token', async () => {
     await expect(buildRepo(join(fixtures, 'bad-token'))).rejects.toThrow(
       /tokens\/app\.css breaks the CSS rule[\s\S]*token: defines the token --color-brand/
@@ -130,16 +180,58 @@ describe('the OS build fails', () => {
 })
 
 describe("this repo's own build", () => {
-  it('builds the smoke app to the acceptance shape', async () => {
-    const out = await buildRepo(repoRoot)
+  let out: string
+  beforeAll(async () => {
+    out = await buildRepo(repoRoot)
+  }, 120_000)
+
+  /** An entry and every chunk it imports, statically or dynamically: what loads with it. */
+  function loaded(entry: string): string {
+    const seen = new Set<string>()
+    const visit = (file: string) => {
+      if (seen.has(file)) return
+      seen.add(file)
+      const code = readFileSync(join(out, file), 'utf8')
+      for (const m of code.matchAll(/(?:from |import\()"(\.\.?\/[^"]+\.mjs)"/g)) {
+        visit(join(file, '..', m[1]).split('\\').join('/'))
+      }
+    }
+    visit(entry)
+    return [...seen].map((f) => readFileSync(join(out, f), 'utf8')).join('\n')
+  }
+
+  it('builds the smoke app to the acceptance shape', () => {
     const mjs = readFileSync(join(out, 'smoke', 'app.mjs'), 'utf8')
     const css = readFileSync(join(out, 'smoke', 'app.css'), 'utf8')
-    expect(mjs).not.toMatch(BARE_SHARED_IMPORT)
+    const all = loaded('smoke/app.mjs')
+    expect(all).not.toMatch(BARE_SHARED_IMPORT)
     // Minified: sharedExport is a one-letter function, its arguments stay readable.
-    expect(mjs).toMatch(/\w\("@imbatranim\/ui", "ConfirmDialog"\)/)
-    expect(mjs).toMatch(/\w\("react\/jsx-runtime", "jsx"\)/)
+    // With two apps, the reads they share sit in a chunk both import.
+    expect(all).toMatch(/\w\("@imbatranim\/ui", "ConfirmDialog"\)/)
+    expect(all).toMatch(/\w\("react\/jsx-runtime", "jsx"\)/)
     expect(mjs).toMatch(/new URL\("\.\.\/workers\/lines\.worker-[\w-]+\.mjs", import\.meta\.url\)/)
     expect(checkUtilitiesOnly(css)).toEqual([])
     expect(css).not.toMatch(/--color-[\w-]+:/)
-  }, 60_000)
+  })
+
+  it("builds Docs with SuperDoc loaded on first open and SuperDoc's stylesheet beside it", () => {
+    const entry = readFileSync(join(out, 'docs', 'app.mjs'), 'utf8')
+    const all = loaded('docs/app.mjs')
+    expect(entry).toMatch(/export \{ \w+ as App \}/)
+    // SuperDoc is its own chunk, imported dynamically: opening a window loads
+    // Docs' UI, the editor arrives with the first document, as in the built-in.
+    expect(entry).toMatch(/import\("\.\.\/chunks\/superdoc\.es-[\w-]+\.mjs"\)/)
+    expect(entry).not.toMatch(/from "\.\.\/chunks\/superdoc/)
+    expect(all).not.toMatch(BARE_SHARED_IMPORT)
+    expect(all).not.toMatch(/\bprocess\.env\b/)
+    expect(all).toMatch(/\w\("@imbatranim\/ui", "useOpenIntent"\)/)
+    // SuperDoc's style.css, as the built-in loaded it, under the vendor rule.
+    const [docs] = discoverApps(repoRoot).filter((a) => a.name === 'docs')
+    expect(appStylePaths(docs)).toEqual(['docs/app.css', 'docs/superdoc.css'])
+    expect(readFileSync(join(out, 'docs', 'superdoc.css'))).toEqual(
+      readFileSync(docs.vendorStyles[0].path)
+    )
+    expect(docs.vendorStyles[0].path).toMatch(/@harbour-enterprises\/superdoc\/dist\/style\.css$/)
+    expect(checkUtilitiesOnly(readFileSync(join(out, 'docs', 'app.css'), 'utf8'))).toEqual([])
+  })
 })
