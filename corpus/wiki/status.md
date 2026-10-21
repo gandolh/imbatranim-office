@@ -21,7 +21,7 @@ its brief 164 for that app, which retires the built-in.
 
 | # | Brief | State | Waits on |
 |---|---|---|---|
-| 01 | [scaffold-and-a-smoke-app](../briefs/todo/01-scaffold-and-a-smoke-app.md) | **todo** | OS 162 and 163 for its last step only |
+| 01 | [scaffold-and-a-smoke-app](../briefs/done/01-scaffold-and-a-smoke-app.md) | **done** (2026-10-21) | — |
 | 02 | [docs-moves-in](../briefs/todo/02-docs-moves-in.md) | **todo** | 01; then OS 164 for Docs |
 | 03 | [cad-a-2d-drafting-app](../briefs/todo/03-cad-a-2d-drafting-app.md) | **todo**, spike-gated | 01 |
 | 04 | [slides-that-edit](../briefs/todo/04-slides-that-edit.md) | **todo**, spike-gated | 01; then OS 164 for Slides |

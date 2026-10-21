@@ -88,3 +88,31 @@ global's name, the module keys, `App`'s props), its outcome note and the OS's
   Settings); it reads the file it was opened with; its stylesheet is added once.
 - `vendor/imbatranim-ui/COMMIT` names the OS commit, and `kit:sync` reproduces
   the snapshot byte for byte from it.
+
+## Outcome (2026-10-21)
+
+**Built in `2c57c37` (steps 1–6) and `92fb703` (step 7), walked in the OS.**
+npm workspaces with exact pins; `npm run build:os` is one Vite library build
+with an entry per `apps/<name>/src/App.tsx`, shared chunks and workers as
+files, run unchanged in the OS's install container (`node:24.14.1-alpine`, no
+network for the build, argv only). The externals plugin turns imports of the
+five shared specifiers into reads from `globalThis.__imbatranimShared`, named,
+default and namespace; `@imbatranim/core`, deep kit paths and
+`react/jsx-dev-runtime` are refused at build time. The kit snapshot is OS
+`4e233b9` (`SHARED_KIT_VERSION` 1, `src/theme.css`); `kit:sync --check`
+reproduces it byte for byte from git objects.
+
+**In the OS dev container** (OS 4e233b9, suite installed from a local
+descriptor): one build (one fetch, `npm ci`, `build:os`, about 21 s); the smoke
+app opened in three windows; its button and ConfirmDialog were the desktop's
+own and followed an accent change; Open With on a `.txt` gave its size and line
+count, counted in its worker; one stylesheet `<link>` for three windows and
+after an update. **In the production image** (real CSP, fresh volume): the
+Marketplace pane installed the suite in 28 s, and smoke and Docs ran with no
+CSP violation.
+
+The descriptor template is `os/descriptor.template.json` (its ref is a
+non-hex placeholder, so the OS refuses an unpinned copy), kept in step with
+the build by a test; `os/README.md` is the local-install recipe. Smoke was
+added `opens: ["txt"]` for the walk (Open With lists only apps that declare
+`opens`) and was deleted by brief 02.
