@@ -22,12 +22,43 @@
       "description": "Edit documents (docx)",
       "meta": ["docs", "document", "word", "docx", "text", "editor", "write"],
       "entry": "docs/app.mjs",
-      "window": { "defaultSize": { "w": 860, "h": 680 }, "minSize": { "w": 480, "h": 380 } },
+      "window": {
+        "defaultSize": {
+          "w": 860,
+          "h": 680
+        },
+        "minSize": {
+          "w": 480,
+          "h": 380
+        }
+      },
       "icon": "file-text",
       "opens": ["docx"],
       "multiInstance": true,
       "capabilities": ["fs", "intents", "notify"],
       "styles": ["docs/app.css", "docs/superdoc.css"]
+    },
+    {
+      "id": "office-cad",
+      "name": "CAD",
+      "description": "2D drafting: DXF drawings with a command line, object snaps and layers.",
+      "meta": ["office", "cad", "dxf", "drafting"],
+      "entry": "cad/app.mjs",
+      "window": {
+        "defaultSize": {
+          "w": 1100,
+          "h": 720
+        },
+        "minSize": {
+          "w": 700,
+          "h": 440
+        }
+      },
+      "icon": "drafting-compass",
+      "opens": ["dxf"],
+      "multiInstance": true,
+      "capabilities": ["fs", "intents", "notify", "shortcuts"],
+      "styles": ["cad/app.css"]
     }
   ],
   "minSystemVersion": 2

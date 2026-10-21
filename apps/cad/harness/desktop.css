@@ -1,0 +1,87 @@
+/*
+ * What the desktop provides around a kit app, for the harness only: the
+ * theme variables and base rules of imbatranimOS apps/core/src/index.css
+ * (56e23b7). Tailwind's preflight is prepended by vite.config.ts.
+ */
+:root {
+  --accent: #c0263a;
+  --accent-on: #ffffff;
+}
+:root,
+:root[data-theme='dark'] {
+  --k-surface: #0d0d0e;
+  --k-surface-dim: #070708;
+  --k-surface-bright: #1b1b1d;
+  --k-surface-container-lowest: #141416;
+  --k-surface-container-low: #171719;
+  --k-surface-container: #1c1c1f;
+  --k-surface-container-high: #232327;
+  --k-surface-container-highest: #2b2b2f;
+  --k-on-surface: #f2f2ef;
+  --k-on-surface-variant: #a4a4aa;
+  --k-inverse-surface: #f2f2ef;
+  --k-inverse-on-surface: #17171a;
+  --k-outline: #55555c;
+  --k-outline-variant: #2e2e33;
+  --k-error: #ff6b6b;
+  --k-error-container: #3a1516;
+  --k-on-error-container: #ffb4ab;
+  color-scheme: dark;
+}
+:root[data-theme='light'] {
+  --k-surface: #f3f3f1;
+  --k-surface-dim: #e0e0dc;
+  --k-surface-bright: #ffffff;
+  --k-surface-container-lowest: #ffffff;
+  --k-surface-container-low: #f8f8f6;
+  --k-surface-container: #efefec;
+  --k-surface-container-high: #e7e7e3;
+  --k-surface-container-highest: #e0e0db;
+  --k-on-surface: #16161a;
+  --k-on-surface-variant: #57575d;
+  --k-inverse-surface: #16161a;
+  --k-inverse-on-surface: #f3f3f1;
+  --k-outline: #9a9a9f;
+  --k-outline-variant: #d1d1cc;
+  --k-error: #ba1a1a;
+  --k-error-container: #ffdad6;
+  --k-on-error-container: #93000a;
+  color-scheme: light;
+}
+* {
+  border-radius: 0 !important;
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--k-surface);
+  color: var(--k-on-surface);
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+}
+.harness-window {
+  position: absolute;
+  inset: 16px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--k-outline);
+  background: var(--k-surface-container-lowest);
+}
+.harness-title {
+  flex: none;
+  padding: 4px 8px;
+  font-size: 12px;
+  background: var(--k-surface-container-high);
+  border-bottom: 1px solid var(--k-outline-variant);
+}
+.harness-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}

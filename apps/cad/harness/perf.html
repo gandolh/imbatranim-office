@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>CAD renderer benchmark</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #141416;
+        color: #f2f2ef;
+        font: 13px sans-serif;
+      }
+      canvas {
+        display: block;
+        width: 1100px;
+        height: 680px;
+      }
+      #out {
+        padding: 6px;
+        white-space: pre;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="c"></canvas>
+    <div id="out">loading…</div>
+    <script type="module" src="./perf.ts"></script>
+  </body>
+</html>
