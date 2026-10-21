@@ -12,7 +12,7 @@ Dependencies installed from npm carry their own licences in `node_modules` and
 are not listed here. The kit snapshot in `vendor/imbatranim-ui` is imbatranimOS
 code under the same AGPL-3.0-only licence.
 
-No translated code yet.
+No code has been translated from another project yet; the sections below are for test data.
 
 ## CADCraft: a sample drawing (CAD test fixture)
 
@@ -29,6 +29,40 @@ No translated code yet.
 MIT License
 
 Copyright (c) 2026 ArtCraft Team and the CADCraft contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## python-pptx (default template, in test decks)
+
+The three test decks in `apps/slides/src/engine/__fixtures__/` (`anim.pptx`,
+`theme.pptx`, and `notes.pptx`, the last copied from imbatranimOS's built-in
+Slides tests) were generated with python-pptx. Their slide master, layouts and
+theme come from the default template python-pptx ships; the slides, text,
+notes and animations were written for the tests. They are test data only and
+are not part of the built app.
+
+python-pptx, https://github.com/scanny/python-pptx, MIT licence:
+
+```
+The MIT License (MIT)
+Copyright (c) 2013 Steve Canny, https://github.com/scanny
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

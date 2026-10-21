@@ -59,6 +59,37 @@
       "multiInstance": true,
       "capabilities": ["fs", "intents", "notify", "shortcuts"],
       "styles": ["cad/app.css"]
+    },
+    {
+      "id": "office-slides",
+      "name": "Slides",
+      "description": "Open, edit and present PowerPoint presentations",
+      "meta": [
+        "slides",
+        "powerpoint",
+        "pptx",
+        "presentation",
+        "deck",
+        "present",
+        "notes",
+        "office"
+      ],
+      "entry": "slides/app.mjs",
+      "window": {
+        "defaultSize": {
+          "w": 960,
+          "h": 560
+        },
+        "minSize": {
+          "w": 620,
+          "h": 380
+        }
+      },
+      "icon": "presentation",
+      "opens": ["pptx"],
+      "multiInstance": true,
+      "capabilities": ["fs", "intents", "notify", "shortcuts"],
+      "styles": ["slides/app.css"]
     }
   ],
   "minSystemVersion": 2
