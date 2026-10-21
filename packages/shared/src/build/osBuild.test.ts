@@ -118,18 +118,22 @@ describe('vendor stylesheets', () => {
     out = await buildRepo(join(fixtures, 'vendor-styles'))
   }, 60_000)
 
-  it('copies each declared stylesheet beside app.css, byte for byte', () => {
+  it('copies each declared stylesheet beside app.css, byte for byte but for its dropped rules', () => {
     expect(files(out).filter((f) => f.startsWith('v/'))).toEqual([
       'v/app.css',
       'v/app.mjs',
       'v/extra.css',
       'v/widget.css',
     ])
-    for (const name of ['widget.css', 'extra.css']) {
-      expect(readFileSync(join(out, 'v', name))).toEqual(
-        readFileSync(join(fixtures, 'vendor-styles', 'apps', 'v', 'lib', name))
-      )
-    }
+    const source = (name: string) =>
+      readFileSync(join(fixtures, 'vendor-styles', 'apps', 'v', 'lib', name), 'utf8')
+    expect(readFileSync(join(out, 'v', 'widget.css'), 'utf8')).toBe(source('widget.css'))
+    // extra.css declares its `*` rule dropped: gone, and every other byte kept.
+    const dropped = '* {\n  scrollbar-width: initial;\n}'
+    expect(source('extra.css')).toContain(dropped)
+    expect(readFileSync(join(out, 'v', 'extra.css'), 'utf8')).toBe(
+      source('extra.css').replace(dropped, '')
+    )
     // app.css stays utilities only: the vendor's classes are not compiled into it.
     const appCss = readFileSync(join(out, 'v', 'app.css'), 'utf8')
     expect(checkUtilitiesOnly(appCss)).toEqual([])
@@ -157,6 +161,12 @@ describe('vendor stylesheets', () => {
 })
 
 describe('the OS build fails', () => {
+  it('when a declared drop is not in the vendor stylesheet exactly once', async () => {
+    await expect(buildRepo(join(fixtures, 'bad-vendor-drop'))).rejects.toThrow(
+      /d\/lib\.css \(\.\/lib\/lib\.css\): dropRules do not match the sheet:[\s\S]*"p \{\n {2}margin: 0;\n\}" is in the sheet 2 times as a top-level rule, not once[\s\S]*"\.gone \{\n {2}color: red;\n\}" is in the sheet 0 times/
+    )
+  })
+
   it('when a vendor stylesheet would restyle the desktop', async () => {
     await expect(buildRepo(join(fixtures, 'bad-vendor-global'))).rejects.toThrow(
       /g\/lib\.css \(\.\/lib\/lib\.css\) would restyle the desktop[\s\S]*global: "p"[\s\S]*token: ":root" sets the desktop's --spacing/
@@ -269,5 +279,31 @@ describe("this repo's own build", () => {
     const css = readFileSync(join(out, 'docs', 'app.css'), 'utf8')
     expect(checkUtilitiesOnly(css)).toEqual([])
     expect(css).not.toMatch(/--color-[\w-]+:/)
+  })
+
+  it("builds Sheets with its xlsx worker as a file and Univer's stylesheet beside it", () => {
+    const entry = readFileSync(join(out, 'sheets', 'app.mjs'), 'utf8')
+    const all = loaded('sheets/app.mjs')
+    expect(entry).toMatch(/export \{ \w+ as App \}/)
+    expect(all).not.toMatch(BARE_SHARED_IMPORT)
+    expect(all).not.toMatch(/\bprocess\.env\b/)
+    // The OS's CSP refuses blob: workers: the worker is its own file, loaded
+    // by a URL relative to the module, and ExcelJS lives only in it.
+    const workers = files(out).filter((f) => /^workers\/xlsxWorker-[\w-]+\.mjs$/.test(f))
+    expect(workers).toHaveLength(1)
+    expect(all).toContain(`new URL("../${workers[0]}", import.meta.url)`)
+    expect(all).not.toContain('exceljs')
+    // Univer's stylesheet, as the built-in loaded it, under the vendor rule,
+    // without the one rule Sheets declares dropped.
+    const [sheets] = discoverApps(repoRoot).filter((a) => a.name === 'sheets')
+    expect(appStylePaths(sheets)).toEqual(['sheets/app.css', 'sheets/univer.css'])
+    const dropped = '*{scrollbar-color:initial;scrollbar-width:initial}'
+    expect(sheets.vendorStyles[0].dropRules).toEqual([dropped])
+    const source = readFileSync(sheets.vendorStyles[0].path, 'utf8')
+    expect(source.split(dropped)).toHaveLength(2)
+    expect(readFileSync(join(out, 'sheets', 'univer.css'), 'utf8')).toBe(
+      source.replace(dropped, '')
+    )
+    expect(checkUtilitiesOnly(readFileSync(join(out, 'sheets', 'app.css'), 'utf8'))).toEqual([])
   })
 })

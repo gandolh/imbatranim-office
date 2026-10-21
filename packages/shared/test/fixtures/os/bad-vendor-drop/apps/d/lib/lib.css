@@ -1,0 +1,15 @@
+/* dropRules that no longer match: one rule is gone, one is there twice. This must fail the build. */
+.lib-a p {
+  margin: 0;
+}
+p {
+  margin: 0;
+}
+@media (min-width: 1px) {
+  p {
+    margin: 0;
+  }
+}
+p {
+  margin: 0;
+}

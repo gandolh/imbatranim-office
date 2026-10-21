@@ -1,0 +1,29 @@
+{
+  "name": "@imbatranim-office/sheets",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "description": "Sheets: edit .xlsx and .csv spreadsheets with Univer. Moved from the OS's built-in apps/add-ons/sheets.",
+  "dependencies": {
+    "@imbatranim-office/shared": "0.0.0",
+    "@univerjs/preset-sheets-core": "0.25.1",
+    "@univerjs/presets": "0.25.1",
+    "exceljs": "4.4.0",
+    "fflate": "0.4.8",
+    "lucide-react": "1.24.0"
+  },
+  "imbatranimOffice": {
+    "vendorStyles": {
+      "univer.css": {
+        "from": "@univerjs/preset-sheets-core/lib/index.css",
+        "ownCustomProperties": [
+          "--univer-"
+        ],
+        "dropRules": [
+          "*{scrollbar-color:initial;scrollbar-width:initial}"
+        ]
+      }
+    }
+  }
+}

@@ -36,6 +36,7 @@ export {
   checkVendorCss,
   desktopVariables,
   describeVendorProblems,
+  dropVendorRules,
   readVendorStyles,
   type VendorStyle,
 } from './vendorCss.ts'

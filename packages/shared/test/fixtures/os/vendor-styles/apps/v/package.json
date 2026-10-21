@@ -9,7 +9,12 @@
           "data-widget-root"
         ]
       },
-      "extra.css": "./lib/extra.css"
+      "extra.css": {
+        "from": "./lib/extra.css",
+        "dropRules": [
+          "* {\n  scrollbar-width: initial;\n}"
+        ]
+      }
     }
   }
 }

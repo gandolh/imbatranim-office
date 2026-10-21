@@ -24,6 +24,7 @@ import {
   checkVendorCss,
   describeVendorProblems,
   desktopVariables,
+  dropVendorRules,
   type VendorStyle,
 } from './vendorCss.ts'
 
@@ -146,10 +147,17 @@ export function appStyles(options: {
 
         for (const vendor of app.vendorStyles ?? []) {
           const vendorFile = `${app.name}/${vendor.fileName}`
-          const vendorCss = readFileSync(vendor.path) // copied as it is, byte for byte
+          // Copied as it is, byte for byte, but for the rules it declares dropped.
+          let vendorCss: Buffer
+          try {
+            vendorCss = dropVendorRules(readFileSync(vendor.path), vendor.dropRules)
+          } catch (err) {
+            this.error(`${vendorFile} (${vendor.specifier}): ${(err as Error).message}`)
+          }
           const vendorProblems = checkVendorCss(vendorCss.toString('utf8'), {
             isDesktopVariable,
             ownAttributes: vendor.ownAttributes,
+            ownCustomProperties: vendor.ownCustomProperties,
           })
           if (vendorProblems.length > 0) {
             this.error(describeVendorProblems(vendorFile, vendor.specifier, vendorProblems))

@@ -5,7 +5,7 @@ import { compile, optimize } from '@tailwindcss/node'
 import { Scanner } from '@tailwindcss/oxide'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { compileAppCss } from './appCss.ts'
-import { checkUtilitiesOnly, parseCss } from './cssRule.ts'
+import { checkUtilitiesOnly, cssUnescape, parseCss, parseCssTopLevel } from './cssRule.ts'
 import { readKitSnapshot } from './kitSnapshot.ts'
 
 const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
@@ -129,5 +129,44 @@ describe('the CSS rule', () => {
         ],
       },
     ])
+  })
+
+  it('reads escapes as characters of a name, not as syntax', () => {
+    const rule = (selector: string, property: string, value: string) => ({
+      type: 'rule',
+      selector,
+      children: [{ type: 'decl', property, value }],
+    })
+    // An escaped quote opens no string (Univer's `content-[""]` variant).
+    expect(
+      parseCss('.before\\:u-content-\\[\\"\\"\\]:before{content:""}.w-1\\/2{width:50%}')
+    ).toEqual([
+      rule('.before\\:u-content-\\[\\"\\"\\]:before', 'content', '""'),
+      rule('.w-1\\/2', 'width', '50%'),
+    ])
+    // Nor do an escaped brace, semicolon or parenthesis end or group anything.
+    expect(parseCss('.a\\{b\\;c\\(d{x:1}')).toEqual([rule('.a\\{b\\;c\\(d', 'x', '1')])
+    // A hex escape keeps the space after it.
+    expect(parseCss('.\\31 23{x:1}')).toEqual([rule('.\\31 23', 'x', '1')])
+    // The property ends at the first colon that is not escaped.
+    expect(parseCss('.x{--a\\:b:1}')).toEqual([rule('.x', '--a\\:b', '1')])
+    expect(checkUtilitiesOnly("@layer utilities{.content-\\[\\'\\'\\]{content:''}}")).toEqual([])
+  })
+
+  it('gives each top-level node the source text it was read from', () => {
+    const css = '/* c */ @layer a, b;\n.x\\:y { a: 1 }  @media (x) { p { b: 2 } } --z: 3'
+    expect(parseCssTopLevel(css).map((t) => css.slice(t.start, t.end))).toEqual([
+      '@layer a, b;',
+      '.x\\:y { a: 1 }',
+      '@media (x) { p { b: 2 } }',
+      '--z: 3',
+    ])
+  })
+
+  it('decodes escapes', () => {
+    expect(cssUnescape('--colo\\72-x')).toBe('--color-x')
+    expect(cssUnescape('before\\:x\\/2')).toBe('before:x/2')
+    expect(cssUnescape('\\31 23')).toBe('123')
+    expect(cssUnescape('\\0 a')).toBe('\ufffda')
   })
 })

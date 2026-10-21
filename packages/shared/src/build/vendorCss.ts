@@ -10,6 +10,11 @@
  *       "superdoc.css": {
  *         "from": "@harbour-enterprises/superdoc/style.css",
  *         "ownAttributes": ["data-tippy-root"]
+ *       },
+ *       "univer.css": {
+ *         "from": "@univerjs/preset-sheets-core/lib/index.css",
+ *         "ownCustomProperties": ["--univer-"],
+ *         "dropRules": ["*{scrollbar-color:initial;scrollbar-width:initial}"]
  *       }
  *     }
  *   }
@@ -19,9 +24,13 @@
  * or a relative path); a bare string is the same as `{ "from": … }`.
  * `ownAttributes` names attributes only the library's elements carry, which
  * then tie a rule to the library the way its classes do (see
- * {@link checkVendorCss}). The file is copied byte for byte once it passes, and
- * the descriptor lists it in the app's `styles` after `app.css` (see
- * `appStylePaths` in osBuild.ts).
+ * {@link checkVendorCss}). `ownCustomProperties` names custom-property
+ * namespaces only the library uses (`--univer-`): a rule on any element may
+ * set those and nothing else. `dropRules` lists top-level rules, each by its
+ * exact source text, that the build leaves out of the copy (see
+ * {@link dropVendorRules}); the check reads what is left. The file is copied
+ * byte for byte otherwise once it passes, and the descriptor lists it in the
+ * app's `styles` after `app.css` (see `appStylePaths` in osBuild.ts).
  *
  * The desktop adds an app's styles to its own page and leaves them there, so
  * a vendor sheet is in force for every window, not just the app's. The check
@@ -31,7 +40,14 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
-import { parseCss, type CssNode, type CssRuleProblem } from './cssRule.ts'
+import {
+  cssEscapeLength,
+  cssUnescape,
+  parseCss,
+  parseCssTopLevel,
+  type CssNode,
+  type CssRuleProblem,
+} from './cssRule.ts'
 
 export type VendorStyle = {
   /** The file written beside `app.css`: `dist/os/<app>/<fileName>`. */
@@ -42,10 +58,20 @@ export type VendorStyle = {
   path: string
   /** Attributes only the library's elements carry (`data-tippy-root`). */
   ownAttributes: string[]
+  /** Custom-property namespaces only the library uses (`--univer-`). */
+  ownCustomProperties: string[]
+  /** Top-level rules, by exact source text, the build leaves out of the copy. */
+  dropRules: string[]
 }
 
 const VENDOR_FILE = /^[a-z0-9][a-z0-9-]*\.css$/
 const DATA_ATTRIBUTE = /^data-[a-z0-9-]+$/
+/**
+ * A custom-property namespace: whole lowercase segments and a closing dash
+ * (`--univer-`, `--lib-ui-`). Never a bare stem like `--t`, which would reach
+ * into `--tw-*` and `--text-*`.
+ */
+const CUSTOM_PROPERTY_NAMESPACE = /^--[a-z0-9]+(?:-[a-z0-9]+)*-$/
 /** The OS allows 8 styles per app (OS brief 163); `app.css` is one of them. */
 export const MAX_VENDOR_STYLES = 7
 
@@ -93,6 +119,27 @@ export function readVendorStyles(appDir: string, appName: string): VendorStyle[]
     ) {
       throw new Error(`${name}: "ownAttributes" lists data-* attribute names`)
     }
+    const ownVariables = spec.ownCustomProperties ?? []
+    if (
+      !Array.isArray(ownVariables) ||
+      !ownVariables.every(
+        (p): p is string => typeof p === 'string' && CUSTOM_PROPERTY_NAMESPACE.test(p)
+      )
+    ) {
+      throw new Error(
+        `${name}: "ownCustomProperties" lists custom-property namespaces, lowercase and ending in "-" ("--lib-")`
+      )
+    }
+    const drop = spec.dropRules ?? []
+    if (
+      !Array.isArray(drop) ||
+      !drop.every((r): r is string => typeof r === 'string' && r.trim() === r && r !== '') ||
+      new Set(drop).size !== drop.length
+    ) {
+      throw new Error(
+        `${name}: "dropRules" lists the exact text of top-level rules, each once and without surrounding whitespace`
+      )
+    }
     let path: string
     try {
       path = require.resolve(spec.from)
@@ -102,7 +149,14 @@ export function readVendorStyles(appDir: string, appName: string): VendorStyle[]
       )
     }
     if (!path.endsWith('.css')) throw new Error(`${name}: "${spec.from}" is not a .css file`)
-    return { fileName, specifier: spec.from, path, ownAttributes: [...own] }
+    return {
+      fileName,
+      specifier: spec.from,
+      path,
+      ownAttributes: [...own],
+      ownCustomProperties: [...ownVariables],
+      dropRules: [...drop],
+    }
   })
 }
 
@@ -129,6 +183,47 @@ export function desktopVariables(sheets: readonly string[]): (name: string) => b
   return (name) => names.has(name) || [...namespaces].some((ns) => name.startsWith(ns))
 }
 
+/**
+ * `source` without the top-level rules `dropRules` names, every other byte as
+ * it was. A rule is named by its exact source text, from its first character to
+ * its closing brace (`*{scrollbar-color:initial;scrollbar-width:initial}`): no
+ * normalising, so a library release that touches the rule at all no longer
+ * matches. Throws unless each one is in the sheet exactly once as a top-level
+ * rule (the same text inside `@media` or a longer selector does not count): a
+ * drop that stops matching, or starts matching twice, needs a person to look
+ * at the sheet again rather than a build that passes on its own.
+ */
+export function dropVendorRules(source: Buffer, dropRules: readonly string[]): Buffer {
+  if (dropRules.length === 0) return source
+  const css = source.toString('utf8')
+  if (!Buffer.from(css, 'utf8').equals(source)) {
+    throw new Error('dropRules: the stylesheet is not valid UTF-8, so no rule can be cut from it')
+  }
+  const top = parseCssTopLevel(css)
+  const cuts: { start: number; end: number }[] = []
+  const wrong: string[] = []
+  for (const [k, rule] of dropRules.entries()) {
+    const found = top.filter((t) => css.slice(t.start, t.end) === rule)
+    if (dropRules.indexOf(rule) !== k) wrong.push(`"${rule}" is listed twice`)
+    else if (found.length === 1) cuts.push(found[0])
+    else wrong.push(`"${rule}" is in the sheet ${found.length} times as a top-level rule, not once`)
+  }
+  if (wrong.length > 0) {
+    throw new Error(
+      ['dropRules do not match the sheet:', ...wrong.map((w) => `  - ${w}`)].join('\n')
+    )
+  }
+  const bytesTo = (index: number) => Buffer.byteLength(css.slice(0, index), 'utf8')
+  const kept: Buffer[] = []
+  let at = 0
+  for (const cut of cuts.sort((a, b) => a.start - b.start)) {
+    kept.push(source.subarray(at, bytesTo(cut.start)))
+    at = bytesTo(cut.end)
+  }
+  kept.push(source.subarray(at))
+  return Buffer.concat(kept)
+}
+
 // ── Selector analysis ────────────────────────────────────────────────────────
 
 /** Split `text` where `isBreak` holds outside (), [] and strings. Empty parts dropped. */
@@ -139,7 +234,7 @@ function splitTopLevel(text: string, isBreak: (ch: string) => boolean): string[]
   for (let i = 0; i < text.length; i++) {
     const ch = text[i]
     if (ch === '\\') {
-      i++
+      i += cssEscapeLength(text, i) - 1
     } else if (ch === '"' || ch === "'") {
       for (i++; i < text.length && text[i] !== ch; i++) if (text[i] === '\\') i++
     } else if (ch === '(' || ch === '[') {
@@ -157,6 +252,26 @@ function splitTopLevel(text: string, isBreak: (ch: string) => boolean): string[]
 
 const selectorList = (selector: string) => splitTopLevel(selector, (ch) => ch === ',')
 const compoundsOf = (complex: string) => splitTopLevel(complex, (ch) => /[\s>+~]/.test(ch))
+
+/**
+ * `selector` with every escape replaced by `_`, an ordinary name character. An
+ * escape is always part of a name, so `.before\:x:before` is the class
+ * `before_x` and then `:before`, `.w-1\/2` and `.\[\&_p\]` are one class each,
+ * and `x\.y` is a type selector, not `x` with a class. The analysis below runs
+ * on this escape-free text.
+ */
+function neutral(selector: string): string {
+  let out = ''
+  for (let i = 0; i < selector.length; i++) {
+    if (selector[i] === '\\') {
+      out += '_'
+      i += cssEscapeLength(selector, i) - 1
+    } else {
+      out += selector[i]
+    }
+  }
+  return out
+}
 
 /** Pseudo-classes whose argument narrows the compound to what it matches. */
 const NARROWING = new Set(['is', 'where', 'matches', '-webkit-any', '-moz-any'])
@@ -176,22 +291,20 @@ function selectorAnalysis(ownAttributes: readonly string[]): Selectors {
    * `:is()`/`:where()` count as a class when every alternative is anchored,
    * and every other argument (`:not()`, `:has()`, `:nth-child()`) as nothing,
    * because it does not tie the element itself to the library. Strings go.
+   * `compound` is escape-free (see {@link neutral}).
    */
   const flatten = (compound: string): string => {
     let out = ''
     for (let i = 0; i < compound.length; i++) {
       const ch = compound[i]
-      if (ch === '\\') {
-        out += compound.slice(i, i + 2)
-        i++
-      } else if (ch === '"' || ch === "'") {
-        for (i++; i < compound.length && compound[i] !== ch; i++) if (compound[i] === '\\') i++
+      if (ch === '"' || ch === "'") {
+        const close = compound.indexOf(ch, i + 1)
+        i = close < 0 ? compound.length : close
       } else if (ch === '(') {
         let depth = 1
         let j = i + 1
         for (; j < compound.length && depth > 0; j++) {
-          if (compound[j] === '\\') j++
-          else if (compound[j] === '(') depth++
+          if (compound[j] === '(') depth++
           else if (compound[j] === ')') depth--
         }
         const pseudo = /:([\w-]+)$/.exec(out)
@@ -224,7 +337,7 @@ function selectorAnalysis(ownAttributes: readonly string[]): Selectors {
   const compoundAnchors = (compound: string): boolean => {
     if (isRootCompound(compound)) return false
     const flat = flatten(compound)
-    if (/[.#](?:[-_a-zA-Z]|[^\p{ASCII}]|\\)/u.test(flat)) return true
+    if (/[.#](?:[-_a-zA-Z]|[^\p{ASCII}])/u.test(flat)) return true
     for (const m of flat.matchAll(/\[\s*([\w-]+)/g)) {
       if (m[1].startsWith('data-v-') || own.has(m[1])) return true
     }
@@ -232,13 +345,13 @@ function selectorAnalysis(ownAttributes: readonly string[]): Selectors {
   }
 
   function anchored(complex: string): boolean {
-    return compoundsOf(complex.replace(/&/g, ' ')).some(compoundAnchors)
+    return compoundsOf(neutral(complex).replace(/&/g, ' ')).some(compoundAnchors)
   }
 
   return {
     anchored,
     isRoot(complex) {
-      const parts = compoundsOf(complex)
+      const parts = compoundsOf(neutral(complex))
       return parts.length > 0 && isRootCompound(parts[parts.length - 1])
     },
   }
@@ -257,22 +370,57 @@ function selectorAnalysis(ownAttributes: readonly string[]): Selectors {
  *   `<body>` outside the window, still read its variables; but none the
  *   desktop owns (see {@link desktopVariables}), and no other
  *   declaration there;
+ * - a rule on any element (`*, :before, :after, ::backdrop`, Tailwind's
+ *   initialiser of its variables) that sets nothing but custom properties in
+ *   the declared `ownCustomProperties` namespaces: a variable only the library
+ *   reads changes no desktop style. A namespace that overlaps the desktop's
+ *   (`--tw-`, `--font-`, `--k-`, …) is refused;
  * - `@keyframes`, `@property` (not a desktop name), `@charset`, `@layer a, b;`.
  *
  * Refused: a rule that reaches an element by type or by a common attribute
  * alone (`p`, `*`, `img:hover`, `::selection`, `[hidden]`) or that styles
- * `html`/`body` (`body.dark p` included: that class is the desktop's); a
- * `--color-*` definition anywhere; `@import`, `@font-face` and any `url()`
- * that is not `data:`, because the build copies the sheet and nothing it
- * points at; and any other at-rule.
+ * `html`/`body` (`body.dark p` included: that class is the desktop's), unless
+ * it sets only the library's own custom properties; a `--color-*` definition
+ * anywhere; `@import`, `@font-face` and any `url()` that is not `data:`,
+ * because the build copies the sheet and nothing it points at; and any other
+ * at-rule. Selectors and property names are read with their escapes
+ * (`.before\:x`, `--a\2d b`) as CSS reads them.
  */
 export function checkVendorCss(
   css: string,
-  options: { isDesktopVariable: (name: string) => boolean; ownAttributes?: readonly string[] }
+  options: {
+    isDesktopVariable: (name: string) => boolean
+    ownAttributes?: readonly string[]
+    ownCustomProperties?: readonly string[]
+  }
 ): CssRuleProblem[] {
   const problems: CssRuleProblem[] = []
   const selectors = selectorAnalysis(options.ownAttributes ?? [])
   const owned = options.isDesktopVariable
+
+  // A namespace is whole segments and a dash, and the desktop's namespaces are
+  // one segment each (`--tw-`, `--k-`), so a declared namespace overlaps one of
+  // them, or a name the desktop uses, exactly when it is a desktop name itself.
+  const ownNamespaces: string[] = []
+  for (const namespace of options.ownCustomProperties ?? []) {
+    if (!CUSTOM_PROPERTY_NAMESPACE.test(namespace)) {
+      problems.push({
+        kind: 'unsupported',
+        detail: `ownCustomProperties "${namespace}" is not a namespace like "--lib-"`,
+      })
+    } else if (owned(namespace)) {
+      problems.push({
+        kind: 'token',
+        detail: `ownCustomProperties "${namespace}" overlaps the desktop's custom properties`,
+      })
+    } else {
+      ownNamespaces.push(namespace)
+    }
+  }
+  const isOwnVariable = (property: string) => {
+    const name = cssUnescape(property)
+    return ownNamespaces.some((ns) => name.startsWith(ns)) && !owned(name)
+  }
 
   const checkDeclarations = (
     nodes: CssNode[],
@@ -280,18 +428,19 @@ export function checkVendorCss(
   ) => {
     for (const node of nodes) {
       if (node.type !== 'decl') continue
-      if (/^--color-/.test(node.property)) {
-        problems.push({ kind: 'token', detail: `defines the token ${node.property}` })
+      const property = cssUnescape(node.property)
+      if (/^--color-/.test(property)) {
+        problems.push({ kind: 'token', detail: `defines the token ${property}` })
       } else if (where.rootSelector !== null) {
-        if (!node.property.startsWith('--')) {
+        if (!property.startsWith('--')) {
           problems.push({
             kind: 'global',
-            detail: `"${where.rootSelector}" sets ${node.property} on the desktop's document`,
+            detail: `"${where.rootSelector}" sets ${property} on the desktop's document`,
           })
-        } else if (owned(node.property)) {
+        } else if (owned(property)) {
           problems.push({
             kind: 'token',
-            detail: `"${where.rootSelector}" sets the desktop's ${node.property}`,
+            detail: `"${where.rootSelector}" sets the desktop's ${property}`,
           })
         }
       }
@@ -326,10 +475,20 @@ export function checkVendorCss(
         const loose = parentAnchored
           ? []
           : parts.filter((p) => !selectors.isRoot(p) && !selectors.anchored(p))
-        for (const part of loose) {
+        // A loose rule may stand when all it sets is the library's own variables.
+        // Its nested rules are still read as loose (see the visit below).
+        const declarations = node.children.filter((c) => c.type === 'decl')
+        const notOwn = declarations.find((d) => !isOwnVariable(d.property))
+        const ownVariablesOnly =
+          ownNamespaces.length > 0 && declarations.length > 0 && notOwn === undefined
+        for (const part of ownVariablesOnly ? [] : loose) {
+          const why =
+            ownNamespaces.length > 0 && notOwn
+              ? `, and ${cssUnescape(notOwn.property)} is not one of its own custom properties (${ownNamespaces.map((ns) => `${ns}*`).join(', ')})`
+              : ''
           problems.push({
             kind: 'global',
-            detail: `"${part}" is not tied to the library's own elements (no class or id of its own)`,
+            detail: `"${part}" is not tied to the library's own elements (no class or id of its own)${why}`,
           })
         }
         checkDeclarations(node.children, {
@@ -356,7 +515,7 @@ export function checkVendorCss(
         case 'charset':
           continue
         case 'property':
-          if (owned(node.prelude)) {
+          if (owned(cssUnescape(node.prelude))) {
             problems.push({ kind: 'token', detail: `@property ${node.prelude} is the desktop's` })
           }
           continue

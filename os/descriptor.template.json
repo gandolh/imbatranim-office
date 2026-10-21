@@ -90,6 +90,28 @@
       "multiInstance": true,
       "capabilities": ["fs", "intents", "notify", "shortcuts"],
       "styles": ["slides/app.css"]
+    },
+    {
+      "id": "office-sheets",
+      "name": "Sheets",
+      "description": "Edit spreadsheets (xlsx, csv)",
+      "meta": ["sheets", "spreadsheet", "excel", "xlsx", "csv", "grid", "table", "formula"],
+      "entry": "sheets/app.mjs",
+      "window": {
+        "defaultSize": {
+          "w": 900,
+          "h": 560
+        },
+        "minSize": {
+          "w": 600,
+          "h": 380
+        }
+      },
+      "icon": "table",
+      "opens": ["xlsx", "xls", "csv"],
+      "multiInstance": true,
+      "capabilities": ["fs", "intents", "notify"],
+      "styles": ["sheets/app.css", "sheets/univer.css"]
     }
   ],
   "minSystemVersion": 2

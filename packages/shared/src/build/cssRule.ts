@@ -33,8 +33,50 @@ export type CssNode =
   | { type: 'rule'; selector: string; children: CssNode[] }
   | { type: 'decl'; property: string; value: string }
 
+const ESCAPE = /\\(?:[0-9a-fA-F]{1,6}(?:\r\n|[ \t\n\r\f])?|[\s\S])?/y
+const ESCAPES = /\\(?:([0-9a-fA-F]{1,6})(?:\r\n|[ \t\n\r\f])?|([\s\S]))/g
+
+/**
+ * The length of the CSS escape that starts at `text[i]`, a backslash: `\` and
+ * up to six hex digits plus one optional whitespace (`\31 `, `\2e`), or `\`
+ * and any one other character (`\:`, `\/`, `\[`, `\"`). The escaped character
+ * belongs to the name it sits in and is never syntax: `.before\:x:before` is
+ * the class `before:x`, then the pseudo-element. Tailwind's class names are
+ * full of these.
+ */
+export function cssEscapeLength(text: string, i: number): number {
+  ESCAPE.lastIndex = i
+  return ESCAPE.exec(text)?.[0].length ?? 1
+}
+
+/** `text` with its CSS escapes decoded: `--colo\72-x` is `--color-x`. */
+export function cssUnescape(text: string): string {
+  return text.replace(ESCAPES, (_match, hex: string | undefined, ch: string | undefined) => {
+    if (hex === undefined) return ch ?? ''
+    const code = parseInt(hex, 16)
+    return code === 0 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)
+      ? '\uFFFD'
+      : String.fromCodePoint(code)
+  })
+}
+
 /** Parse well-formed CSS into at-rules, style rules and declarations (nesting allowed). */
 export function parseCss(css: string): CssNode[] {
+  return parseCssTopLevel(css).map((t) => t.node)
+}
+
+/**
+ * {@link parseCss}'s top-level nodes, each with the source text it was read
+ * from: `css.slice(start, end)` is the rule from its first character to its
+ * closing `}` (or `;`), without the whitespace and comments around it.
+ */
+export function parseCssTopLevel(css: string): { node: CssNode; start: number; end: number }[] {
+  const spans: { start: number; end: number }[] = []
+  const nodes = parseNodes(css, spans)
+  return nodes.map((node, k) => ({ node, ...spans[k] }))
+}
+
+function parseNodes(css: string, topSpans: { start: number; end: number }[]): CssNode[] {
   let i = 0
   const n = css.length
 
@@ -48,7 +90,11 @@ export function parseCss(css: string): CssNode[] {
     i++
   }
 
-  /** Read up to (not including) the first `{`, `;` or `}` outside strings, comments and parentheses. */
+  /**
+   * Read up to (not including) the first `{`, `;` or `}` outside strings,
+   * comments, parentheses and escapes (an escaped `\"`, `\(` or `\{` is a
+   * character of a name, not the start of a string, a group or a block).
+   */
   const readPrelude = (): { text: string; stop: string } => {
     let text = ''
     let parens = 0
@@ -58,6 +104,12 @@ export function parseCss(css: string): CssNode[] {
         continue
       }
       const ch = css[i]
+      if (ch === '\\') {
+        const length = cssEscapeLength(css, i)
+        text += css.slice(i, i + length)
+        i += length
+        continue
+      }
       if (ch === '"' || ch === "'") {
         const start = i
         skipString(ch)
@@ -74,8 +126,13 @@ export function parseCss(css: string): CssNode[] {
     return { text: text.trim(), stop: '' }
   }
 
-  const parseBlock = (): CssNode[] => {
+  /** `spans`, given at the top level only, gets each node's source range. */
+  const parseBlock = (spans?: { start: number; end: number }[]): CssNode[] => {
     const nodes: CssNode[] = []
+    const push = (node: CssNode, start: number) => {
+      nodes.push(node)
+      spans?.push({ start, end: i })
+    }
     for (;;) {
       while (i < n && /\s/.test(css[i])) i++
       if (css.startsWith('/*', i)) {
@@ -87,20 +144,24 @@ export function parseCss(css: string): CssNode[] {
         i++
         return nodes
       }
+      const start = i
       const { text, stop } = readPrelude()
       if (stop === '{') {
         i++
         const children = parseBlock()
         if (text.startsWith('@')) {
           const m = /^@([\w-]+)\s*([\s\S]*)$/.exec(text)
-          nodes.push({
-            type: 'at',
-            name: (m?.[1] ?? '').toLowerCase(),
-            prelude: (m?.[2] ?? '').trim(),
-            children,
-          })
+          push(
+            {
+              type: 'at',
+              name: (m?.[1] ?? '').toLowerCase(),
+              prelude: (m?.[2] ?? '').trim(),
+              children,
+            },
+            start
+          )
         } else {
-          nodes.push({ type: 'rule', selector: text, children })
+          push({ type: 'rule', selector: text, children }, start)
         }
         continue
       }
@@ -108,24 +169,35 @@ export function parseCss(css: string): CssNode[] {
       if (text === '') continue
       if (text.startsWith('@')) {
         const m = /^@([\w-]+)\s*([\s\S]*)$/.exec(text)
-        nodes.push({
-          type: 'at',
-          name: (m?.[1] ?? '').toLowerCase(),
-          prelude: (m?.[2] ?? '').trim(),
-          children: null,
-        })
+        push(
+          {
+            type: 'at',
+            name: (m?.[1] ?? '').toLowerCase(),
+            prelude: (m?.[2] ?? '').trim(),
+            children: null,
+          },
+          start
+        )
       } else {
-        const colon = text.indexOf(':')
-        nodes.push({
-          type: 'decl',
-          property: (colon < 0 ? text : text.slice(0, colon)).trim(),
-          value: colon < 0 ? '' : text.slice(colon + 1).trim(),
-        })
+        // The first colon that is not escaped (`--a\:b: 1` is the property `--a:b`).
+        let colon = -1
+        for (let j = 0; j < text.length && colon < 0; j++) {
+          if (text[j] === '\\') j += cssEscapeLength(text, j) - 1
+          else if (text[j] === ':') colon = j
+        }
+        push(
+          {
+            type: 'decl',
+            property: (colon < 0 ? text : text.slice(0, colon)).trim(),
+            value: colon < 0 ? '' : text.slice(colon + 1).trim(),
+          },
+          start
+        )
       }
     }
   }
 
-  return parseBlock()
+  return parseBlock(topSpans)
 }
 
 const PREFLIGHT_SELECTOR =
