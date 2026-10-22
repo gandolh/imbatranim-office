@@ -1,6 +1,6 @@
 ---
-summary: What is genuinely unresolved for imbatranim-office: the CAD engine pieces and the Slides save strategy (both settled by their briefs' spikes), DWG support, and which app first needs a server.
-updated: 2026-10-21
+summary: What is genuinely unresolved for imbatranim-office: DWG support, and which app first needs a server. (CAD's engine and Slides' save strategy were settled by briefs 03 and 04; see decisions.md.)
+updated: 2026-10-22
 ---
 
 # Open questions
@@ -8,11 +8,6 @@ updated: 2026-10-21
 Delete a question here the moment it is answered; its history goes to
 `status.md` and `log.md`.
 
-- **CAD's engine pieces.** Which DXF reader and writer, and whether Canvas 2D
-  holds 60 fps on a large drawing. Settled by brief 03's spike.
-- **How Slides saves without losing what it doesn't understand.** The brief
-  expects patching the package in place rather than regenerating it. Settled by
-  brief 04's spike.
 - **DWG.** No browser reader without WebAssembly exists. A suite server could
   convert DWG to DXF with LibreDWG (GPL-3.0, compatible with AGPL-3.0). Not
   planned; worth a brief only if the owner works with DWG files.

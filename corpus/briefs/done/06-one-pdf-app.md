@@ -99,3 +99,19 @@ norPDF's side:
 - Every parity line is ticked, or the brief stays in `todo/` with the failures
   named in the log.
 - The outcome note says whether the OS can run brief 164 for the PDF pair.
+
+## Outcome (2026-10-22)
+
+**Built in `a810d77` (+ `ded2bb6`); the in-OS walk and timing move to brief
+[09](../todo/09-pdf-walk-in-the-os.md).** norPDF and `@pdfcore/engine` moved
+from imbatranimOS `56e23b7`, preservation tests unchanged. First inked page in
+a standalone production page, headless Chrome, cold, 5–7 runs each: a 36-page
+NIST file took a median 237 ms against PDF Viewer's 492 ms, a 48-page one 248
+against 508 (no 40-page public file was found). The pdf.js worker is one file
+and one shared `PDFWorker`: the engine's `import.meta.url` worker became a
+`data:` URL in a library build, which the CSP refuses. `@napi-rs/canvas` stays
+test-only and installs from its musl prebuild. Deliberate changes from the
+built-ins are in [pdf.md](../../wiki/pdf.md) (the conflict dialog on save, no
+write for an untouched document, PDF Viewer's zoom steps, a fixed side panel).
+Keep one `pdfjs-dist` in the tree (`npm dedupe` if SuperDoc's optional peer
+nests a second copy).

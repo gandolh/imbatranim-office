@@ -1,33 +1,47 @@
 ---
-summary: Current snapshot (2026-10-21): nothing built; six briefs filed (scaffold, Docs, CAD, Slides, Sheets, PDF), the order they run in, and the imbatranimOS briefs (162, 163, 164) each one waits on.
-updated: 2026-10-21
+summary: Current snapshot (2026-10-22): all five apps built on main (Docs, CAD, Slides, Sheets, PDF) and in the descriptor template; briefs 01–06 done, Docs and CAD walked in the OS; four small briefs left (07–09 the Slides, Sheets and PDF walks in the OS, 10 Docs find-as-you-type), each unblocking one imbatranimOS retirement brief (164–167); nothing pushed.
+updated: 2026-10-22
 ---
 
-# Status — 2026-10-21
+# Status — 2026-10-22
 
-**Phase: planned, nothing built.** The repo holds the corpus, a README and the
-license. The decisions are in [decisions.md](decisions.md); the planned layout
-in [architecture.md](architecture.md).
+**Phase: built, partly walked.** `main` has the scaffold and all five apps;
+`npm run build:os` builds them into `dist/os`, and `os/descriptor.template.json`
+lists them. Docs and CAD were walked inside a real OS (dev container and the
+production image, under its CSP); the Slides, Sheets and PDF walks were cut
+off by a session limit on 2026-10-22 and are briefs 07–09. The run paused at
+the owner's request, to continue one brief at a time.
 
 ## Order
 
-The OS's groundwork comes first: imbatranimOS brief 162 (one descriptor,
-several apps) and 163 (the shared kit) must be built before any app here can
-open in a window. Then Docs, to prove the move; then CAD and Slides, the two
-apps the OS lacks; then Sheets and PDF. Each moved app ends with the OS running
-its brief 164 for that app, which retires the built-in.
+Each walk brief unblocks one imbatranimOS brief that retires a built-in:
+Docs is ready now (OS 164, which also commits the catalog's Office entry);
+07 → OS 165 (Slides), 08 → OS 166 (Sheets), 09 → OS 167 (PDF Viewer and
+norPDF). Brief 10 is independent.
 
 ## Briefs
 
 | # | Brief | State | Waits on |
 |---|---|---|---|
 | 01 | [scaffold-and-a-smoke-app](../briefs/done/01-scaffold-and-a-smoke-app.md) | **done** (2026-10-21) | — |
-| 02 | [docs-moves-in](../briefs/todo/02-docs-moves-in.md) | **todo** | 01; then OS 164 for Docs |
-| 03 | [cad-a-2d-drafting-app](../briefs/todo/03-cad-a-2d-drafting-app.md) | **todo**, spike-gated | 01 |
-| 04 | [slides-that-edit](../briefs/todo/04-slides-that-edit.md) | **todo**, spike-gated | 01; then OS 164 for Slides |
-| 05 | [sheets-moves-in](../briefs/todo/05-sheets-moves-in.md) | **todo** | 01, 02; then OS 164 for Sheets |
-| 06 | [one-pdf-app](../briefs/todo/06-one-pdf-app.md) | **todo** | 01; then OS 164 for the PDF pair |
+| 02 | [docs-moves-in](../briefs/done/02-docs-moves-in.md) | **done** (2026-10-22): parity walked; several windows fixed (`1ca83c0`) | — |
+| 03 | [cad-a-2d-drafting-app](../briefs/done/03-cad-a-2d-drafting-app.md) | **done** (2026-10-22): spike passed; walked in the OS | — |
+| 04 | [slides-that-edit](../briefs/done/04-slides-that-edit.md) | **done** (2026-10-22): built, spike passed; walk → 07 | — |
+| 05 | [sheets-moves-in](../briefs/done/05-sheets-moves-in.md) | **done** (2026-10-22): built; walk → 08 | — |
+| 06 | [one-pdf-app](../briefs/done/06-one-pdf-app.md) | **done** (2026-10-22): built, first page 237 ms vs 492 ms outside the OS; walk → 09 | — |
+| 07 | [slides-walk-in-the-os](../briefs/todo/07-slides-walk-in-the-os.md) | **todo** | — ; then OS 165 |
+| 08 | [sheets-walk-in-the-os](../briefs/todo/08-sheets-walk-in-the-os.md) | **todo** | — ; then OS 166 |
+| 09 | [pdf-walk-in-the-os](../briefs/todo/09-pdf-walk-in-the-os.md) | **todo** | — ; then OS 167 |
+| 10 | [docs-find-as-you-type](../briefs/todo/10-docs-find-as-you-type.md) | **todo** | — |
+
+Open todos: [Docs' caret in every window](../todos/2026-10-22-docs-caret-in-every-window.md),
+[CAD's TRIM on short segments](../todos/2026-10-22-cad-trim-pick-on-short-stubs.md).
+Test files for the walks: [test-files.md](test-files.md).
 
 ## Owed by the owner
 
-- Push this repo's `main` when ready (the remote is set; nothing is pushed).
+- Push this repo's `main` before imbatranimOS's: the OS's Office catalog entry
+  (from its brief 164) pins a commit of this repo, and the OS clones it from
+  GitHub at install.
+- After the OS is deployed, install Office from Settings → Marketplace on the
+  live machine; until then it has no office editor once a built-in retires.

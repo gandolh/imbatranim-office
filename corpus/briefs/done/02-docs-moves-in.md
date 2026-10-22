@@ -81,3 +81,31 @@ Docs, which retires the built-in. That is an OS commit, not part of this brief.
 - Every parity line is ticked, or the brief stays in `todo/` with the failing
   lines named in the log.
 - The OS can run brief 164 for Docs: the outcome note says so in one line.
+
+## Outcome (2026-10-22)
+
+**Built in `4686b34`, `92fb703` (smoke retired) and `1ca83c0` (several
+windows); walked in the OS dev container and in its production image.** The
+built-in's `src/` was copied from imbatranimOS `56e23b7`; SuperDoc 1.45.0 and
+fflate 0.4.8 keep its pins, and SuperDoc's stylesheet ships as a checked vendor
+stylesheet ([stylesheets.md](../../wiki/stylesheets.md)). Capabilities are
+`fs`, `intents`, `notify`: Ctrl+S and Ctrl+F are window listeners, so
+`shortcuts` is not needed.
+
+**Parity, with the built-in beside it:** every line passes in both apps except
+two. Save as is n/a, since the built-in has none. "Three windows" failed in
+both: SuperDoc's input bridge listens on `window` in the capture phase and
+takes focus from every other instance, so typing reached no window. Since
+`1ca83c0` the suite marks each instance's active editor surface with
+`data-editor-ui-surface` (it follows header and footer sessions). Walked: three
+windows type and save their own files, and header editing, find, tracked
+changes and typing after a reload behave as before. No CSP violation under the
+production image.
+
+**Known, not fixed.** With the built-in and the suite both open, keystrokes
+typed in the built-in land in the suite's document; OS brief 164 removes the
+built-in. Find-as-you-type keeps only the first character, in both apps
+(brief [10](../todo/10-docs-find-as-you-type.md)). Every Docs window keeps a
+blinking caret when more than one is open (a todo).
+
+**The OS can run brief 164 for Docs.**

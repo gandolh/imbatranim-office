@@ -88,3 +88,23 @@ else is built.
 - In Chrome, in the OS, each viewer feature of the built-in works on the same
   files, and the three spike decks survive an edit, a save and a reopen in the
   app and in LibreOffice with their masters, themes, notes and animations.
+
+## Outcome (2026-10-22)
+
+**Built in `2acbe13` (+ `898578d`); the spike passed; the in-OS walk moves to
+brief [07](../todo/07-slides-walk-in-the-os.md).** On three real decks (an
+11-slide deck with animations and transitions, one with a custom master and
+theme, one with 14 notes pages and animations) and three generated twins, each
+of the brief's edits and a save left every untouched part byte identical; the
+edited slide's timing, transitions and `mc:AlternateContent` came back
+identical, and LibreOffice opened every save with the right page count and the
+edited text. Saves patch the package in place
+([decisions.md](../../wiki/decisions.md)). One renderer of our own views and
+edits, so pptx-preview is gone. Viewer parity and editing v1 were exercised in
+a standalone page in Chrome. The walk inside the OS was cut off by the session
+limit, and its notes were lost in a restart.
+
+**Known gaps** ([slides.md](../../wiki/slides.md)): no save has been opened in
+PowerPoint itself; charts draw as boxes; EMF and WMF pictures are not drawn;
+shapes inside groups move only as a group; the slide show does not play
+transitions or animations; `docProps/app.xml` is left stale.

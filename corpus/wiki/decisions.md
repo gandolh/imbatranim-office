@@ -1,6 +1,6 @@
 ---
-summary: The locked calls behind imbatranim-office: its own repo installed as one suite descriptor, TypeScript with editing in the browser, kit apps on the desktop's shared kit, the crafts as reference only, PDF Viewer and norPDF merged, and office-* app ids, with what each rejected and why. Read before proposing an alternative.
-updated: 2026-10-21
+summary: The locked calls behind imbatranim-office: its own repo installed as one suite descriptor, TypeScript with editing in the browser, kit apps on the desktop's shared kit, the crafts as reference only, PDF Viewer and norPDF merged, and office-* app ids, with what each rejected and why. Read before proposing an alternative; CAD's engine (dxf-viewer's parser, @tarikjabiri/dxf, Canvas 2D) and Slides saving by patching the package in place.
+updated: 2026-10-22
 ---
 
 # Decisions
@@ -82,3 +82,38 @@ same id would be invisible until its built-in was deleted, and parity could not
 be checked side by side. OS brief 164 moves the owner's choices (associations,
 desktop icons, the disabled set) from the old id to the new one when a built-in
 retires.
+
+## CAD's engine: dxf-viewer's parser to read, @tarikjabiri/dxf to write, our own Canvas 2D renderer
+_2026-10-21_ — The DXF reader is dxf-viewer 1.0.50's parser, imported by path
+(its `src/parser`, MIT inside an MPL-2.0 package), plus our own raw pass that
+adds the layer fields both readers drop (linetype, locked, lineweight) and
+keeps every group code of the entities the parser skips. The writer is
+@tarikjabiri/dxf 2.9.0 (AC1021), with its extended-data, layer, entity-header
+and attribute output replaced by ours, and unmodelled entities written from
+their raw group codes. Rendering is Canvas 2D, batched by style and culled with
+an rbush index.
+Rejected: dxf-parser 1.1.2 (unmaintained, reads no HATCH); dxf-writer 1.18.4
+(no MTEXT, INSERT or entity colour); a writer of our own; WebGL (Canvas 2D held
+60 fps on 10,053 lines and on 11,088 mixed entities).
+**Why**: the fewest losses on the test files, an active parser, a typed writer,
+and frame time to spare (brief 03's spike).
+- *Consequence*: `npm ci` installs three.js and opentype.js as dxf-viewer's
+  dependencies; nothing of them is bundled.
+- *Consequence*: entity handles change on every save.
+
+## Slides saves by patching the package in place
+_2026-10-21_ — A `.pptx` is opened as its OPC package. Each part the editor
+touches is parsed into a lossless XML tree whose untouched nodes write back
+their source bytes; an edit changes only the elements it names, and a save
+copies every other part byte for byte. The editor's renderer draws from the
+same model.
+Rejected: regenerating the file from a model (pptxtojson in, PptxGenJS out),
+which loses masters, themes, animations and embedded objects on the first
+save; DOMParser and XMLSerializer (jsdom's serializer is not Chrome's, and a
+worker has no DOM); keeping pptx-preview as the viewer.
+**Why**: brief 04's spike: on three real decks, untouched parts came back byte
+identical and LibreOffice opened every save.
+- *Consequence*: what the editor does not model (charts, OLE, custom XML)
+  survives untouched but cannot be edited.
+- *Consequence*: deleting a shape prunes the animations on it; deleting a slide
+  removes the parts only it used.

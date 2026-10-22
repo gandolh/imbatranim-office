@@ -91,3 +91,30 @@ convert DWG to DXF on a suite server, which may run wasm in Node. Not here.
   put the walls on a `WALLS` layer, save, close and reopen it, and open the
   saved file in another DXF viewer (LibreCAD or dxf-viewer's demo) with nothing
   missing.
+
+## Outcome (2026-10-22)
+
+**Built in `9fc538a` (+ `71705c8`, `2de323e`); the spike passed; walked in the
+OS's production image.** dxf-viewer 1.0.50's parser plus our own raw pass
+reads `apartment.dxf`, a 1,232-entity cadastre sheet and a 10,053-line map with
+no coordinate lost; @tarikjabiri/dxf 2.9.0 writes, with our own output where it
+has bugs. Round trips are identical to 12 significant digits, and ezdxf's audit
+finds nothing. Canvas 2D in headless Chrome held 60 fps panning the 10,053
+lines (worst frame 16.8 ms) and 58 fps on an 11,088-entity mixed drawing (the
+cadastre sheet tiled 3×3: no real drawing that large was found), no frame over
+50 ms, so no WebGL brief. The calls are in
+[decisions.md](../../wiki/decisions.md); the model in
+[cad.md](../../wiki/cad.md).
+
+**In the OS** (OS `4e233b9`, suite at `ded2bb6`): `apartment.dxf` opened from
+Files and drew. A 10×8 room drawn with typed coordinates, offset 0.2,
+cornered, moved to a `WALLS` layer, saved, closed and reopened; ezdxf read 8
+lines on `WALLS` at the expected coordinates and LibreCAD drew it. Dirty mark,
+close guard, the conflict dialog, three windows, and SVG and PDF export through
+the OS's save dialog all worked, with no CSP violation or console error.
+
+**Deviations.** The corners were made with FILLET radius 0: TRIM's pick on a
+0.2 stub missed at that zoom (a todo). The default window is the brief's
+1100×720, taller than ui-conventions' guidance. Known gaps are listed in
+cad.md (no editing of dimensions, hatches or tables; ACAD_TABLE saved as a
+block reference; entities that need a CLASS record dropped with a warning).
