@@ -10,7 +10,7 @@
     "@univerjs/preset-sheets-core": "0.25.1",
     "@univerjs/presets": "0.25.1",
     "exceljs": "4.4.0",
-    "fflate": "0.4.8",
+    "fflate": "0.4.9",
     "lucide-react": "1.24.0"
   },
   "imbatranimOffice": {
