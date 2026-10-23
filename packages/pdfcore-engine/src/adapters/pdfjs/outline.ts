@@ -36,9 +36,9 @@ export class PdfjsOutline implements Outline {
 
   async destinations(): Promise<NamedDestination[]> {
     const doc = await this.#document();
-    const dests = (await doc.getDestinations()) as Record<string, unknown[]>;
+    const dests = await doc.getDestinations();
     const out: NamedDestination[] = [];
-    for (const [name, dest] of Object.entries(dests)) {
+    for (const [name, dest] of dests) {
       out.push({ name, pageIndex: await this.#pageIndexOf(doc, dest) });
     }
     return out;

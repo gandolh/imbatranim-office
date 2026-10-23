@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, PDFName, StandardFonts, rgb } from "pdf-lib";
 import { createCanvas } from "@napi-rs/canvas";
 import { loadPdf, NotImplemented } from "../index.node.js";
 import type { RenderTarget } from "../index.node.js";
@@ -83,6 +83,22 @@ describe("@pdfcore/engine round-trip (Node)", () => {
     expect(Array.isArray(tree)).toBe(true);
     expect(tree).toHaveLength(0);
     expect(await doc.outline.destinations()).toEqual([]);
+  });
+
+  it("lists named destinations with their page index", async () => {
+    // pdf.js 6.4 returns getDestinations() as a Map; read as a plain object it
+    // came back empty, which the fixture above (no destinations) can't see.
+    const src = await PDFDocument.create();
+    src.addPage([612, 792]);
+    const second = src.addPage([612, 792]);
+    src.catalog.set(
+      PDFName.of("Dests"),
+      src.context.obj({ Second: [second.ref, "XYZ", null, null, null] }),
+    );
+    const doc = await loadPdf(await src.save());
+    expect(await doc.outline.destinations()).toEqual([
+      { name: "Second", pageIndex: 1 },
+    ]);
   });
 
   it("still-unimplemented capabilities fail fast with a named error", async () => {

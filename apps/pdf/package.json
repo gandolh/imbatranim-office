@@ -9,7 +9,7 @@
     "@imbatranim-office/shared": "0.0.0",
     "@pdfcore/engine": "1.0.0",
     "lucide-react": "1.24.0",
-    "pdfjs-dist": "6.1.200"
+    "pdfjs-dist": "6.4.299"
   },
   "devDependencies": {
     "pdf-lib": "1.17.1"
