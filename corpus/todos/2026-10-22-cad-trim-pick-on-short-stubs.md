@@ -1,9 +1,11 @@
 ---
 title: CAD's TRIM misses short segments at normal zoom
 created: 2026-10-22
-status: open
+status: promoted
 tags: [cad, input]
 ---
+
+Promoted 2026-10-23 into [brief 11](../briefs/todo/11-cad-trim-picks-the-short-stub.md).
 
 # CAD's TRIM misses short segments at normal zoom
 

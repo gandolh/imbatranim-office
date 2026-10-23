@@ -33,6 +33,8 @@ norPDF). Brief 10 is independent.
 | 08 | [sheets-walk-in-the-os](../briefs/todo/08-sheets-walk-in-the-os.md) | **todo** | — ; then OS 166 |
 | 09 | [pdf-walk-in-the-os](../briefs/todo/09-pdf-walk-in-the-os.md) | **todo** | — ; then OS 167 |
 | 10 | [docs-find-as-you-type](../briefs/todo/10-docs-find-as-you-type.md) | **todo** | — |
+| 11 | [cad-trim-picks-the-short-stub](../briefs/todo/11-cad-trim-picks-the-short-stub.md) | **todo** (filed 2026-10-23) | — |
+| 12 | [docs-one-caret-with-several-windows](../briefs/todo/12-docs-one-caret-with-several-windows.md) | **todo** (filed 2026-10-23) | 10 |
 
 Open todos: [Docs' caret in every window](../todos/2026-10-22-docs-caret-in-every-window.md),
 [CAD's TRIM on short segments](../todos/2026-10-22-cad-trim-pick-on-short-stubs.md).
