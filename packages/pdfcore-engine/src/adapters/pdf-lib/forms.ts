@@ -188,6 +188,8 @@ export class PdfLibForms implements Forms {
     };
     const options = optionsFor(field, type);
     if (options) info.options = options;
+    const maxLength = maxLengthOf(field);
+    if (maxLength !== undefined) info.maxLength = maxLength;
     return info;
   }
 
@@ -216,6 +218,14 @@ export class PdfLibForms implements Forms {
         if (typeof value !== "string") {
           throw new PdfEngineError(
             `Forms.set: text field "${name}" expects a string.`,
+          );
+        }
+        // pdf-lib checks /MaxLen only when the value is written, so a long
+        // value used to fail the whole save (brief 09's walk, the IRS W-9).
+        const maxLength = maxLengthOf(field);
+        if (maxLength !== undefined && value.length > maxLength) {
+          throw new PdfEngineError(
+            `Forms.set: text field "${name}" holds at most ${maxLength} character${maxLength === 1 ? "" : "s"}.`,
           );
         }
         return;
@@ -335,6 +345,11 @@ function readValue(field: PDFField, type: FieldType): FieldValue {
     case "signature":
       return "";
   }
+}
+
+/** A text field's `/MaxLen`; `undefined` for other fields and for none. */
+function maxLengthOf(field: PDFField): number | undefined {
+  return field instanceof PDFTextField ? field.getMaxLength() : undefined;
 }
 
 /** Allowed options for choice fields; `undefined` for the rest. */

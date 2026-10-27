@@ -112,6 +112,7 @@ async function pdfBytes(pages = 3): Promise<Uint8Array> {
   const name = form.createTextField('applicant')
   name.addToPage(doc.getPage(0), { x: 72, y: 600, width: 200, height: 20 })
   const city = form.createTextField('city')
+  city.setMaxLength(20)
   city.setText('Timisoara')
   city.addToPage(doc.getPage(0), { x: 72, y: 560, width: 200, height: 20 })
   return new Uint8Array(await doc.save())
@@ -310,6 +311,9 @@ describe('PDF, as a kit app', () => {
 
     const inputs = await openForms(2)
     expect(inputs).toHaveLength(2)
+    // The field's /MaxLen reaches the input, so it cannot be overfilled (brief 09).
+    expect(inputs[1]!.maxLength).toBe(20)
+    expect(inputs[0]!.maxLength).toBe(-1)
     type(inputs[0]!, 'Jane Q. Public')
     expect(fake.titles.at(-1)).toBe('report.pdf •')
 

@@ -35,6 +35,11 @@ export interface FieldInfo {
   readonly: boolean;
   /** Field is required. */
   required: boolean;
+  /**
+   * Most characters a text field holds (its `/MaxLen`), when it sets one.
+   * `set` refuses a longer value; pdf-lib would otherwise fail the save.
+   */
+  maxLength?: number;
 }
 
 /**

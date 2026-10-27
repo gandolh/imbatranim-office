@@ -192,6 +192,31 @@ describe("Forms capability (pdf-lib adapter + pdf.js geometry)", () => {
     );
   });
 
+  it("reports a text field's MaxLen and refuses a longer value at set(), not at save()", async () => {
+    // Brief 09's walk: the IRS W-9's one-letter field took "Walk LLC" and the
+    // save failed. The limit is now known before the value is staged.
+    const src = await PDFDocument.create();
+    const page = src.addPage([600, 800]);
+    const form = src.getForm();
+    const letter = form.createTextField("letter");
+    letter.setMaxLength(1);
+    letter.addToPage(page, { x: 50, y: 700, width: 20, height: 20 });
+    const free = form.createTextField("free");
+    free.addToPage(page, { x: 50, y: 660, width: 200, height: 20 });
+    const doc = await loadPdf(await src.save());
+
+    expect(doc.forms.get("letter")?.maxLength).toBe(1);
+    expect(doc.forms.get("free")?.maxLength).toBeUndefined();
+    expect(() => doc.forms.set("letter", "Walk LLC")).toThrow(
+      /holds at most 1 character\./,
+    );
+    doc.forms.set("letter", "C");
+    doc.forms.set("free", "anything at all");
+    const saved = await reloadForm(await doc.save());
+    expect(saved.getTextField("letter").getText()).toBe("C");
+    expect(saved.getTextField("free").getText()).toBe("anything at all");
+  });
+
   it("flatten() bakes values and removes all interactive fields on reload", async () => {
     const doc = await loadPdf(await makeFormFixture());
     doc.forms.set("fullName", "Baked Value");

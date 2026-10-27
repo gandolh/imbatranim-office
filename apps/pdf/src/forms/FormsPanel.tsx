@@ -251,6 +251,7 @@ function FieldControl({
         <Input
           type="text"
           value={typeof value === 'string' ? value : ''}
+          maxLength={field.maxLength}
           disabled={readonly}
           placeholder={readonly ? '(read-only)' : 'Enter text…'}
           onChange={(e) => onSet(name, e.target.value)}
