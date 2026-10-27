@@ -23,7 +23,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fileName, useSystem } from '@imbatranim/ui'
 import type { DocumentMetadata, OutlineNode, PdfDoc, Render } from '@pdfcore/engine'
-import { openFirstPage, PageRender, readerPlatform } from '../reader/pdfjs'
+import { openFirstPage, PageRender, readerPlatform, warmUpPdfjs } from '../reader/pdfjs'
 import { loadEngine, type Engine } from './engine'
 import type {
   FitMode,
@@ -85,6 +85,16 @@ async function measurePages(render: Render): Promise<PageDim[] | null> {
 
 /** What the engine opens once the first page is on screen. */
 type PendingOpen = { openId: number; bytes: Uint8Array; first: PageRender }
+
+/**
+ * pdf.js and its worker start loading while the file's bytes are read, not
+ * after (brief 09's walk: the library and worker waited for the download, and
+ * the first page came 50 ms after PDF Viewer's). A failed start is retried by
+ * the parse that needs it.
+ */
+function warmUp(): void {
+  warmUpPdfjs().catch(() => undefined)
+}
 
 export function useReaderController(): ReaderController {
   const system = useSystem()
@@ -268,6 +278,7 @@ export function useReaderController(): ReaderController {
 
   const openFile = useCallback(
     async (file: File) => {
+      warmUp()
       const bytes = new Uint8Array(await file.arrayBuffer())
       await openBytes(bytes, file.name)
     },
@@ -277,6 +288,7 @@ export function useReaderController(): ReaderController {
   const openFromOs = useCallback(
     async (file: { root: string; path: string }) => {
       setLoading(true)
+      warmUp()
       try {
         const { bytes, version } = await system.fs.readWithVersion(file.root, file.path)
         // Retain the source as the write-back target: Save writes back here,

@@ -67,7 +67,10 @@ vi.mock('./reader/pdfjs', async () => {
 
   return {
     PageRender,
-    warmUpPdfjs: async () => ({}),
+    warmUpPdfjs: async () => {
+      events.log.push('warm up')
+      return {}
+    },
     async openFirstPage(bytes: Uint8Array) {
       const sizes = await sizesOf(bytes)
       events.log.push('pdf.js open')
@@ -259,6 +262,34 @@ describe('PDF, as a kit app', () => {
       (b) => b.textContent?.trim() === 'Save'
     )
     expect(save?.disabled).toBe(true)
+  })
+
+  it('starts pdf.js while the file is still being read', async () => {
+    const fake = createFakeSystem({
+      appId: 'office-pdf',
+      files: { [`home:${PATH}`]: await pdfBytes() },
+      intent: opened,
+    })
+    // Hold the read open: brief 09's walk found pdf.js waiting for the bytes.
+    let release: () => void = () => {}
+    const held = new Promise<void>((resolve) => (release = resolve))
+    const read = fake.system.fs.readWithVersion.bind(fake.system.fs)
+    fake.system.fs.readWithVersion = async (root, path) => {
+      events.log.push('read')
+      await held
+      return read(root, path)
+    }
+    renderWithSystem(
+      <App windowId="window-1" host={fakeHost({ appId: 'office-pdf' })} />,
+      fake.system
+    )
+    await settle()
+    expect(events.log).toContain('read')
+    expect(events.log).toContain('warm up')
+    expect(events.log).not.toContain('pdf.js open')
+    release()
+    await openDocument()
+    expect(events.log.indexOf('pdf.js open')).toBeGreaterThan(events.log.indexOf('warm up'))
   })
 
   it('writes nothing for Ctrl+S on an untouched document', async () => {
