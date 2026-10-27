@@ -1,6 +1,6 @@
 ---
-summary: PDF (apps/pdf), the OS's PDF Viewer and norPDF merged into one app, and @pdfcore/engine (packages/pdfcore-engine), moved from imbatranimOS 56e23b7 — what each module owns, the fast first page (pdf.js alone, the engine and editing tools after it), the shared pdf.js worker file, the save→reload cache contract, what the write path is proven to preserve, the timing, and what is deliberately not supported.
-updated: 2026-10-21
+summary: PDF (apps/pdf), the OS's PDF Viewer and norPDF merged into one app, and @pdfcore/engine (packages/pdfcore-engine), moved from imbatranimOS 56e23b7 — what each module owns, the fast first page (pdf.js alone, the engine and editing tools after it), the shared pdf.js worker file, the save→reload cache contract, what the write path is proven to preserve, the timing (standalone, and in the OS where the suite is 40 ms behind PDF Viewer), and what is deliberately not supported.
+updated: 2026-10-27
 ---
 
 # PDF and `@pdfcore/engine`
@@ -161,29 +161,29 @@ brief 06 repeated it end to end on real files (below).
 
 ## Timing (brief 06, 2026-10-21, standalone)
 
-Method: each app built for production in a minimal harness page, served with
-`no-store` and the desktop's CSP; a fresh browser per run (headless Chrome,
-`agent-browser`), runs interleaved; first inked page as OS brief 65 defined it,
-by sampling canvas pixels each frame; time from the window mounting (PDF
-Viewer's lazy chunk, or the suite's `app.mjs`, still to load) to ink. PDF
-Viewer at its default 720×640, PDF at 1040×560 with the rail open.
+Method: each app built for production in a harness page with the desktop's
+CSP, a fresh headless Chrome per run, runs interleaved; first inked page by
+sampling canvas pixels each frame (OS brief 65), from the window mounting to
+ink. PDF Viewer at 720×640, PDF at 1040×560 with the rail open.
 
 | File | PDF Viewer (56e23b7) | PDF (suite) |
 |---|---|---|
 | NIST SP 800-218, 36 pages, 7 runs each | median **492 ms** | median **237 ms** |
 | NIST AI 100-1, 48 pages, 5 runs each | median **508 ms** | median **248 ms** |
 
-The in-OS measurement (installed suite against the built-in) is the walk's.
+**In the OS (brief 09, 2026-10-27):** OS `74dfe27`'s production image, the
+same sampling from the Open With click, 36-page file, 7 runs each. Before `8880663`: PDF Viewer median
+518 ms, the suite 571. After it (pdf.js and its worker load beside the
+download): PDF Viewer 534, the suite 574 (550–608). The gap is before the
+download: the suite's `app.mjs` and ten shared chunks come from the
+marketplace route after the window mounts (about 70 ms, six connections),
+while PDF Viewer's chunk loads when the window opens.
 
 ## `@napi-rs/canvas`
 
-A test-only native module (the engine's Node render tests), pinned 1.0.2 as
-the engine's devDependency; pdfjs-dist 6.1.200 pulls the same version as an
-optional dependency anyway. It has no install script and ships prebuilt
-platform packages: in `node:24.14.1-alpine` (no compiler) `npm ci` installed
-`@napi-rs/canvas-linux-x64-musl`, the engine's tests passed there offline, and
-`npm run build:os` passed offline with the package deleted. No workspace split
-was needed.
+Test-only (the engine's Node render tests), the engine's devDependency. No
+install script, prebuilt per platform: in `node:24.14.1-alpine` `npm ci` took
+the musl build, the tests passed offline, and `build:os` passed without it.
 
 ## Not supported, deliberately
 

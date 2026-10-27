@@ -93,3 +93,39 @@ appeared in pages where the built-in Sheets had also loaded; a freshly loaded
 page with two suite windows logged nothing. The lossy warning reads "lose
 it" for "charts", in both apps. test-files.md names `47813-real-chart.xlsx`,
 which POI does not have; the walk used `47813.xlsx` and `WithChart.xlsx`.
+
+## [2026-10-28] build | Brief 09 walked: nine lines pass, the timing gate fails; stays in todo
+
+[Brief 09](briefs/todo/09-pdf-walk-in-the-os.md) walked PDF in imbatranimOS
+`74dfe27`'s production image beside PDF Viewer and norPDF. **The timing gate
+fails.** From the Open With click to ink on the 36-page NIST file, a fresh
+browser per run, 7 runs each, alternating: PDF Viewer 513, 518, 521, 534, 534,
+542, 720 ms (median 534); the suite 550, 567, 571, 574, 606, 607, 608 (median
+574). Before `8880663` the medians were 518 and 571. That fix starts pdf.js and
+its worker while the file downloads, as `warmUpPdfjs` intended; nothing called
+it before. The rest of the gap comes before the download: the suite's `app.mjs`
+and ten shared chunks load from the marketplace route after the window mounts
+(about 70 ms, past Chrome's six connections), while PDF Viewer's chunk loads
+when the window opens. Closing it is an OS change (start a kit app's import
+when its window opens) or a build change (fewer first-path chunks), neither in
+this brief's files. The numbers are in [pdf.md](wiki/pdf.md).
+
+The other nine lines pass. Zoom steps by 25% as PDF Viewer's; paging and the
+keyboard work (PDF Viewer has no keys). Outline, thumbnails and search (31
+matches, previous and next wrap) work; Enter in the search box restarts at the
+first match, as in norPDF. All nine annotate tools saved, showed after a
+reopen, and a second save added only the new one. Organise reordered, rotated,
+deleted, inserted a blank page and extracted two pages (pypdf agrees). A drawn
+stamp and a typed signature in the field saved and render in poppler.
+`Ctrl+S` on an untouched file left its checksum and mtime alone. Files, Open
+With, recents (`office-pdf`), the dirty mark, the conflict dialog's three
+answers, the close guard's three answers and three windows saving their own
+files all pass. The Open button uses the OS's dialog. The worker loads as
+`workers/pdf.worker-*.mjs`, and no CSP violation or console error came up.
+
+**Fixed.** `184a761`: the W-9's one-letter field took "Walk LLC" and Save failed
+("Attempted to set text with length=8 for TextField with maxLength=1"). Fields
+now report their `/MaxLen`, `Forms.set` refuses longer values and the input
+stops at the limit. The re-walk saved the W-9 with both prefilled fields intact.
+
+Briefs 10 and 11 were not started: the owner paused the run on 2026-10-28.
