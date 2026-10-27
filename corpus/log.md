@@ -50,3 +50,46 @@ windows, and no CSP violation. The walk found one defect: the notes box dropped
 the first key typed after a pause. It is fixed in `8f5b2f6` and was re-walked.
 The image was a local build run in a container of its own (port 8092, a
 throwaway volume), not the dev profile. The OS can run its brief 165.
+
+## [2026-10-27] build | Brief 08 walked: seven lines pass, a formula-heavy workbook freezes the window; stays in todo
+
+[Brief 08](briefs/todo/08-sheets-walk-in-the-os.md) walked Sheets in imbatranimOS
+`74dfe27`'s production image, with the built-in beside it. It found two
+defects, both in the built-in too, and fixed them in the suite. `e57a4ea`: an
+`.xls` opened as an empty grid that a save would write over (ExcelJS loads it
+as a workbook with no sheets); the suite now refuses it by name, and refuses
+an OLE2 or non-zip file named `.xlsx` from its first bytes. `a4b6134`: every
+`.xlsx` save failed ("Value at index 0 does not have a transferable type"),
+because the worker put ExcelJS's Buffer in its transfer list; it now hands
+back an ArrayBuffer. The built-in Sheets in this image cannot save an
+`.xlsx` at all.
+
+After the fixes, seven lines pass. Opening from Files, Open With, the Open
+button and Recent works, attributed to `office-sheets`. Fidelity holds:
+openpyxl reads back values, formulas, number formats, bold, italic, colours,
+fills and both sheets of `fidelity.xlsx` and `styles.xlsx`; the built-in's
+round trip could not be compared, since it cannot save. The chart and merge
+warnings name the same features as the built-in's. CSV keeps quoted fields,
+CRLF, leading zeros and 20-digit numbers as text, drops the BOM, and warns
+before a multi-sheet save (both answers walked). The conflict dialog's
+three answers, the close guard's three answers and three windows saving
+their own files all pass; Save as is n/a, since neither app has one, as in
+Docs' brief 02. Univer's styles stay in the window: twelve desktop elements
+kept every computed property apart from stacking. New Spreadsheet in Files
+opened, saved and read back.
+
+**Fails: the 10 MB line.** The parse runs in `workers/xlsxWorker-*.mjs` and a
+values-only 10.2 MB workbook opens with one 323 ms task. A 10.6 MB workbook
+with 220,000 row-local formulas blocks the main thread for 5.6 s after the
+grid appears (the built-in 4.4 s), and 4.1 s with LibreOffice's cached values.
+Univer's formula engine runs on the main thread. Moving it into a worker
+(`UniverSheetsCorePreset({ workerURL })`) is a new brief, not a walk fix; the
+owner decides whether the freeze, which the built-in shares, holds back OS
+brief 166.
+
+Also seen: a running-total formula on every row (`=SUM(C$2:Cn)`) hung the tab
+for minutes in the suite. `[redi]` "loaded more than once" console errors
+appeared in pages where the built-in Sheets had also loaded; a freshly loaded
+page with two suite windows logged nothing. The lossy warning reads "lose
+it" for "charts", in both apps. test-files.md names `47813-real-chart.xlsx`,
+which POI does not have; the walk used `47813.xlsx` and `WithChart.xlsx`.
