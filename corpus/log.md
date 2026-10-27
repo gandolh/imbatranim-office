@@ -26,7 +26,7 @@ Paused by the owner mid-run. The owner's calls for the run (2026-10-21): retire 
 
 All five apps are on `main` and in the descriptor template. **Docs** (02) walked its parity checklist in the OS; "three windows" failed in the built-in too, because SuperDoc's window-level input bridge takes keystrokes from every other instance, and `1ca83c0` fixes it in the suite by marking each instance's active editor surface. **CAD** (03) passed its spike (Canvas 2D at 60 fps on 10,053 lines, so no WebGL) and its in-OS walk: a 10×8 room drawn with typed coordinates, saved and read back by ezdxf and LibreCAD. **Slides** (04) passed its spike: a save patches the package in place, and on three real decks every untouched part came back byte identical. **Sheets** (05) needed two declared allowances for Univer's stylesheet. **PDF** (06) draws its first page in a median 237 ms against PDF Viewer's 492 ms, outside the OS. The calls for CAD's engine and Slides' save strategy are in [decisions.md](wiki/decisions.md).
 
-The in-OS walks of Slides, Sheets and PDF were cut off by a session limit, and a restart wiped the session scratch (test files, walk notes). The owner paused the run to continue brief by brief. Those walks are now [07](briefs/todo/07-slides-walk-in-the-os.md), [08](briefs/todo/08-sheets-walk-in-the-os.md) and [09](briefs/todo/09-pdf-walk-in-the-os.md); [10](briefs/todo/10-docs-find-as-you-type.md) is a bug the Docs walk found in the built-in too. [test-files.md](wiki/test-files.md) records where every test file came from, so they can be fetched again. The resume point above is superseded by this entry.
+The in-OS walks of Slides, Sheets and PDF were cut off by a session limit, and a restart wiped the session scratch (test files, walk notes). The owner paused the run to continue brief by brief. Those walks are now [07](briefs/done/07-slides-walk-in-the-os.md), [08](briefs/todo/08-sheets-walk-in-the-os.md) and [09](briefs/todo/09-pdf-walk-in-the-os.md); [10](briefs/todo/10-docs-find-as-you-type.md) is a bug the Docs walk found in the built-in too. [test-files.md](wiki/test-files.md) records where every test file came from, so they can be fetched again. The resume point above is superseded by this entry.
 
 ## [2026-10-23] todo | Briefs 11 and 12 from the two walk todos
 
@@ -37,3 +37,16 @@ and the filter runs after. [12](briefs/todo/12-docs-one-caret-with-several-windo
 one blinking caret with several Docs windows; reading SuperDoc 1.46.3 for an option is
 step one, and if there is none it stops and reports. It runs after 10, which owns
 `apps/docs/**`.
+
+## [2026-10-27] build | Brief 07 done: Slides walked in the OS
+
+[Brief 07](briefs/done/07-slides-walk-in-the-os.md) walked Slides in imbatranimOS
+`74dfe27`'s production image, with the built-in beside it. Every line passes:
+viewer parity, opening from Files, Open With, the Open button and Recent, the
+`.ppt` refusal, the full edit round on the three test decks, LibreOffice
+conversions with every untouched zip entry byte identical, the conflict
+dialog's three answers, Save as, the close guard, New presentation, three
+windows, and no CSP violation. The walk found one defect: the notes box dropped
+the first key typed after a pause. It is fixed in `8f5b2f6` and was re-walked.
+The image was a local build run in a container of its own (port 8092, a
+throwaway volume), not the dev profile. The OS can run its brief 165.

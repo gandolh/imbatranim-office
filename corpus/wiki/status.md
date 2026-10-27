@@ -1,23 +1,23 @@
 ---
-summary: Current snapshot (2026-10-22): all five apps built on main (Docs, CAD, Slides, Sheets, PDF) and in the descriptor template; briefs 01–06 done, Docs and CAD walked in the OS; four small briefs left (07–09 the Slides, Sheets and PDF walks in the OS, 10 Docs find-as-you-type), each unblocking one imbatranimOS retirement brief (164–167); nothing pushed.
-updated: 2026-10-22
+summary: Current snapshot (2026-10-27): all five apps built on main (Docs, CAD, Slides, Sheets, PDF) and in the descriptor template; briefs 01–07 done, Docs, CAD and Slides walked in the OS; left 08–09 (the Sheets and PDF walks), 10 (Docs find-as-you-type), 11 (CAD TRIM pick) and 12 (Docs caret, waits on 10), the walks each unblocking one imbatranimOS retirement brief (165 is ready, 166–167 wait); nothing pushed.
+updated: 2026-10-27
 ---
 
-# Status — 2026-10-22
+# Status — 2026-10-27
 
 **Phase: built, partly walked.** `main` has the scaffold and all five apps;
 `npm run build:os` builds them into `dist/os`, and `os/descriptor.template.json`
-lists them. Docs and CAD were walked inside a real OS (dev container and the
-production image, under its CSP); the Slides, Sheets and PDF walks were cut
-off by a session limit on 2026-10-22 and are briefs 07–09. The run paused at
-the owner's request, to continue one brief at a time.
+lists them. Docs, CAD and Slides were walked inside a real OS (dev container
+and the production image, under its CSP); the Sheets and PDF walks, cut off by
+a session limit on 2026-10-22, are briefs 08–09. The run continues one brief
+at a time.
 
 ## Order
 
 Each walk brief unblocks one imbatranimOS brief that retires a built-in:
-Docs is ready now (OS 164, which also commits the catalog's Office entry);
-07 → OS 165 (Slides), 08 → OS 166 (Sheets), 09 → OS 167 (PDF Viewer and
-norPDF). Brief 10 is independent.
+Docs is ready (OS 164, which also commits the catalog's Office entry);
+Slides is ready (07 done → OS 165); 08 → OS 166 (Sheets), 09 → OS 167 (PDF
+Viewer and norPDF). Briefs 10 and 11 are independent; 12 waits on 10.
 
 ## Briefs
 
@@ -29,7 +29,7 @@ norPDF). Brief 10 is independent.
 | 04 | [slides-that-edit](../briefs/done/04-slides-that-edit.md) | **done** (2026-10-22): built, spike passed; walk → 07 | — |
 | 05 | [sheets-moves-in](../briefs/done/05-sheets-moves-in.md) | **done** (2026-10-22): built; walk → 08 | — |
 | 06 | [one-pdf-app](../briefs/done/06-one-pdf-app.md) | **done** (2026-10-22): built, first page 237 ms vs 492 ms outside the OS; walk → 09 | — |
-| 07 | [slides-walk-in-the-os](../briefs/todo/07-slides-walk-in-the-os.md) | **todo** | — ; then OS 165 |
+| 07 | [slides-walk-in-the-os](../briefs/done/07-slides-walk-in-the-os.md) | **done** (2026-10-27): every line passes; notes fix `8f5b2f6` | — ; OS 165 can run |
 | 08 | [sheets-walk-in-the-os](../briefs/todo/08-sheets-walk-in-the-os.md) | **todo** | — ; then OS 166 |
 | 09 | [pdf-walk-in-the-os](../briefs/todo/09-pdf-walk-in-the-os.md) | **todo** | — ; then OS 167 |
 | 10 | [docs-find-as-you-type](../briefs/todo/10-docs-find-as-you-type.md) | **todo** | — |

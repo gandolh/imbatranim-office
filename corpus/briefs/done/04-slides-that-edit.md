@@ -92,7 +92,7 @@ else is built.
 ## Outcome (2026-10-22)
 
 **Built in `2acbe13` (+ `898578d`); the spike passed; the in-OS walk moves to
-brief [07](../todo/07-slides-walk-in-the-os.md).** On three real decks (an
+brief [07](07-slides-walk-in-the-os.md).** On three real decks (an
 11-slide deck with animations and transitions, one with a custom master and
 theme, one with 14 notes pages and animations) and three generated twins, each
 of the brief's edits and a save left every untouched part byte identical; the
