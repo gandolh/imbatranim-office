@@ -386,6 +386,10 @@ export async function serialize(snapshot: IWorkbookData): Promise<ArrayBuffer> {
     }
   }
 
-  const buffer = await wb.xlsx.writeBuffer()
-  return buffer as ArrayBuffer
+  // ExcelJS hands back a Buffer (a Uint8Array, and in Node often a view into a
+  // larger pool), not an ArrayBuffer. The worker transfers the result, and only
+  // an ArrayBuffer can be transferred: posting the view failed every save in the
+  // OS (brief 08's walk). Copy it into an ArrayBuffer of its own length.
+  const written: ArrayBuffer | Uint8Array = await wb.xlsx.writeBuffer()
+  return written instanceof ArrayBuffer ? written : new Uint8Array(written).buffer
 }

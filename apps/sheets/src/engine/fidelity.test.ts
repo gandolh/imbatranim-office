@@ -78,6 +78,19 @@ describe('scanXlsx — what the fixture actually contains', () => {
 })
 
 describe('the round-trip — what survives', () => {
+  it('hands back an ArrayBuffer the worker can transfer, holding just the file', async () => {
+    // Brief 08's walk: the worker posted ExcelJS's Buffer in its transfer list,
+    // which only takes ArrayBuffers, and every save in the OS failed.
+    const first = await parse(fixtureBytes())
+    const out = await serialize(first.workbook as IWorkbookData)
+    expect(out).toBeInstanceOf(ArrayBuffer)
+    const head = new Uint8Array(out, 0, 2)
+    expect([head[0], head[1]]).toEqual([0x50, 0x4b])
+    const moved = structuredClone(out, { transfer: [out] })
+    expect(moved.byteLength).toBeGreaterThan(0)
+    expect(out.byteLength).toBe(0)
+  })
+
   it('preserves cell values across parse → serialize → parse', async () => {
     const first = await parse(fixtureBytes())
     const out = await serialize(first.workbook as IWorkbookData)
