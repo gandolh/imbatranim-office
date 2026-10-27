@@ -112,6 +112,39 @@ describe('Sheets, as a kit app', () => {
     expect(fake.notifications).toEqual([])
   })
 
+  it('refuses an .xls by name, before reading it, and offers to open another file', async () => {
+    const fake = createFakeSystem({
+      files: { 'home:Documents/old.xls': new Uint8Array([0xd0, 0xcf, 0x11, 0xe0]) },
+      intent: { root: 'home', openPath: 'Documents/old.xls' },
+    })
+    const view = renderWithSystem(<App windowId="window-1" host={fakeHost()} />, fake.system)
+    await openSheet()
+
+    expect(fake.fsCalls).toEqual([])
+    expect(engine.created).toHaveLength(0)
+    expect(view.container.textContent).toContain(
+      'Excel 97-2003 (.xls) is not supported. Sheets reads .xlsx and .csv files.'
+    )
+    expect(view.container.textContent).toContain('Open a spreadsheet instead')
+    expect(view.container.textContent).not.toContain('Save')
+    expect(fake.notifications).toHaveLength(1)
+  })
+
+  it('refuses an .xlsx whose first bytes are not a zip, without a grid', async () => {
+    const ole = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0])
+    const fake = createFakeSystem({
+      files: { 'home:Documents/renamed.xlsx': ole },
+      intent: { root: 'home', openPath: 'Documents/renamed.xlsx' },
+    })
+    const view = renderWithSystem(<App windowId="window-1" host={fakeHost()} />, fake.system)
+    await openSheet()
+
+    expect(fake.fsCalls).toEqual(['readWithVersion home:Documents/renamed.xlsx'])
+    expect(engine.created).toHaveLength(0)
+    expect(view.container.textContent).toContain('Excel 97-2003 file named .xlsx')
+    expect(fake.notifications).toHaveLength(1)
+  })
+
   it('opens a .csv through the CSV parser, not the worker', async () => {
     const fake = createFakeSystem({
       files: { 'home:Documents/data.csv': 'a,b\r\n007,"x,y"\r\n' },

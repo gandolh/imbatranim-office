@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AlertTriangle, Loader2, Save, Sheet as SheetIcon } from 'lucide-react'
+import { AlertTriangle, FileWarning, Loader2, Save, Sheet as SheetIcon } from 'lucide-react'
 import {
   Button,
   Tooltip,
   fileName,
   reportFileFailure,
+  reportFileRefusal,
   saveOverRead,
   useConfirm,
   useFileConflict,
@@ -18,6 +19,7 @@ import { createSheetEngine, type SheetEngine } from './engine/univer'
 import { retainXlsxWorker, univerToXlsx, xlsxToUniver } from './engine/xlsxBridge'
 import { csvToUniver, univerToCsv } from './engine/csv'
 import { lossyWarning, type LossyFeature } from './engine/xlsxScan'
+import { sniffReason, unsupportedReason } from './engine/formats'
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
@@ -54,9 +56,23 @@ export function Sheets({ windowId: _windowId }: { windowId: string }) {
   const isCsv = /\.csv$/i.test(source?.path ?? '')
   const lossyNote = lossyWarning(lossy)
 
+  // Refuse what ExcelJS cannot read before it is asked: by name, before a byte
+  // is fetched, and from the first bytes of a workbook that is not a zip. An
+  // .xls used to open as an empty grid that a save wrote over (formats.ts).
+  const refusal = source ? unsupportedReason(source.path) : null
+  const sourceKey = source ? `${source.root}:${source.path}:${reloadKey}` : null
+  const [sniffed, setSniffed] = useState<{ key: string; reason: string } | null>(null)
+  const refused = refusal ?? (sniffed && sniffed.key === sourceKey ? sniffed.reason : null)
+
+  // Said once, in the notification centre as well as in the window.
+  useEffect(() => {
+    if (!refusal || !source) return
+    reportFileRefusal(system, refusal, { name: fileName(source.path, 'workbook.xlsx') })
+  }, [system, refusal, source])
+
   // Boot Univer, fetch the file, map it through the ExcelJS bridge into the grid.
   useEffect(() => {
-    if (!source) return
+    if (!source || refusal) return
     const container = containerRef.current
     if (!container) return
     const releaseWorker = retainXlsxWorker()
@@ -67,6 +83,15 @@ export function Sheets({ windowId: _windowId }: { windowId: string }) {
     setError(null)
     ;(async () => {
       try {
+        const { bytes, version } = await system.fs.readWithVersion(source.root, source.path)
+        if (cancelled) return
+        const why = csvFile ? null : sniffReason(new Uint8Array(bytes))
+        if (why) {
+          const docName = fileName(source.path, 'workbook.xlsx')
+          setSniffed({ key: `${source.root}:${source.path}:${reloadKey}`, reason: why })
+          reportFileRefusal(system, why, { name: docName })
+          return
+        }
         engine = await createSheetEngine(container)
         if (cancelled) {
           engine.destroy()
@@ -74,8 +99,6 @@ export function Sheets({ windowId: _windowId }: { windowId: string }) {
         }
         engineRef.current = engine
         engine.onEdit(() => setDirty(true))
-        const { bytes, version } = await system.fs.readWithVersion(source.root, source.path)
-        if (cancelled) return
         diskVersionRef.current = version
 
         if (csvFile) {
@@ -118,7 +141,7 @@ export function Sheets({ windowId: _windowId }: { windowId: string }) {
       engine?.destroy()
       releaseWorker()
     }
-  }, [source, system, reloadKey])
+  }, [source, system, reloadKey, refusal])
 
   const handleSave = useCallback(async () => {
     const engine = engineRef.current
@@ -195,6 +218,19 @@ export function Sheets({ windowId: _windowId }: { windowId: string }) {
   // Reflect filename + dirty marker in the window title; closing with unsaved
   // changes asks Save / Don't Save / Cancel through the themed dialog.
   const unsavedDialog = useUnsavedGuard(dirty, name, handleSave)
+
+  if (source && refused) {
+    return (
+      <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+        <FileWarning size={40} strokeWidth={1} className="text-error" />
+        <span className="font-ui text-on-surface text-[12px] font-semibold">{name}</span>
+        <span className="font-ui max-w-[340px] text-[12px]">{refused}</span>
+        <Button size="sm" variant="primary" onClick={pickFile}>
+          Open a spreadsheet instead
+        </Button>
+      </div>
+    )
+  }
 
   if (!source) {
     return (
