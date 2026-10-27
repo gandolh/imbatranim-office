@@ -27,13 +27,12 @@ export function NotesPane({ slideNumber, text, onCommit, flushRef }: Props) {
   })
 
   // A new slide, or an undo that changed the notes: show what the deck holds.
-  // (The draft's own commits come back normalized; those do not reset it.)
-  if (
-    syncedFrom.slideNumber !== slideNumber ||
-    (syncedFrom.text !== text && normalizeNotes(draft) !== text)
-  ) {
+  // The draft's own commits come back normalized; those do not reset it, but
+  // they are remembered, or the next key typed would look like a change from
+  // elsewhere and be thrown away.
+  if (syncedFrom.slideNumber !== slideNumber || syncedFrom.text !== text) {
     setSyncedFrom({ text, slideNumber })
-    setDraft(text)
+    if (syncedFrom.slideNumber !== slideNumber || normalizeNotes(draft) !== text) setDraft(text)
   }
 
   const flush = () => {
