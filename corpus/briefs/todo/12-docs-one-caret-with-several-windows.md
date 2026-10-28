@@ -26,7 +26,7 @@ toolbar and tooltip selectors (`.sd-toolbar-dropdown-menu`,
 The todo ruled out two fixes on purpose: hiding the caret with CSS on SuperDoc's
 classes, and timing the marker to keystrokes. Look for a SuperDoc option first.
 
-Run this after [brief 10](10-docs-find-as-you-type.md), which owns `apps/docs/**`.
+Run this after [brief 10](../done/10-docs-find-as-you-type.md), which owns `apps/docs/**`.
 
 ## Files you OWN
 

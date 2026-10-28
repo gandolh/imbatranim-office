@@ -1,6 +1,6 @@
 ---
 summary: Where the walks' test files come from (sourced 2026-10-21 and lost with /tmp in a restart): CAD drawings, PDFs, decks, workbooks and documents, each with its source, licence and what it exercises, and which may be committed as fixtures. Re-fetch them into a scratch directory; never execute them.
-updated: 2026-10-22
+updated: 2026-10-28
 ---
 
 # Test files
@@ -62,6 +62,7 @@ was the cadastre sheet tiled 3×3 (11,088 entities).
 | `.doc`, `.odt`, `.rtf` | LibreOffice conversions of it | CC0 | refusals by name | yes |
 | the normalizer case | a `.docx` missing `styles.xml`, `document.xml.rels` and `docProps/custom.xml`, as the built-in's normalizer test builds it | ours | the silent-save-loss repair | yes |
 | a `.docx` with a header | generate with python-docx | CC0 | header editing with several windows | yes |
+| `find-walk.docx` | generate with python-docx 1.2.0 in a throwaway container (2026-10-28): a header, a heading, 30 paragraphs each with one "hello", a closing "hello" | CC0 | find-as-you-type (31 matches, the wrap), three windows with a header | yes |
 
 ## The crafts (reference only)
 

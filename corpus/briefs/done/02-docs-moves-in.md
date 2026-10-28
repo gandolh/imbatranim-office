@@ -105,7 +105,7 @@ production image.
 **Known, not fixed.** With the built-in and the suite both open, keystrokes
 typed in the built-in land in the suite's document; OS brief 164 removes the
 built-in. Find-as-you-type keeps only the first character, in both apps
-(brief [10](../todo/10-docs-find-as-you-type.md)). Every Docs window keeps a
+(brief [10](10-docs-find-as-you-type.md)). Every Docs window keeps a
 blinking caret when more than one is open (a todo).
 
 **The OS can run brief 164 for Docs.**

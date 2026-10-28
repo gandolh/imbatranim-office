@@ -26,7 +26,7 @@ Paused by the owner mid-run. The owner's calls for the run (2026-10-21): retire 
 
 All five apps are on `main` and in the descriptor template. **Docs** (02) walked its parity checklist in the OS; "three windows" failed in the built-in too, because SuperDoc's window-level input bridge takes keystrokes from every other instance, and `1ca83c0` fixes it in the suite by marking each instance's active editor surface. **CAD** (03) passed its spike (Canvas 2D at 60 fps on 10,053 lines, so no WebGL) and its in-OS walk: a 10×8 room drawn with typed coordinates, saved and read back by ezdxf and LibreCAD. **Slides** (04) passed its spike: a save patches the package in place, and on three real decks every untouched part came back byte identical. **Sheets** (05) needed two declared allowances for Univer's stylesheet. **PDF** (06) draws its first page in a median 237 ms against PDF Viewer's 492 ms, outside the OS. The calls for CAD's engine and Slides' save strategy are in [decisions.md](wiki/decisions.md).
 
-The in-OS walks of Slides, Sheets and PDF were cut off by a session limit, and a restart wiped the session scratch (test files, walk notes). The owner paused the run to continue brief by brief. Those walks are now [07](briefs/done/07-slides-walk-in-the-os.md), [08](briefs/done/08-sheets-walk-in-the-os.md) and [09](briefs/done/09-pdf-walk-in-the-os.md); [10](briefs/todo/10-docs-find-as-you-type.md) is a bug the Docs walk found in the built-in too. [test-files.md](wiki/test-files.md) records where every test file came from, so they can be fetched again. The resume point above is superseded by this entry.
+The in-OS walks of Slides, Sheets and PDF were cut off by a session limit, and a restart wiped the session scratch (test files, walk notes). The owner paused the run to continue brief by brief. Those walks are now [07](briefs/done/07-slides-walk-in-the-os.md), [08](briefs/done/08-sheets-walk-in-the-os.md) and [09](briefs/done/09-pdf-walk-in-the-os.md); [10](briefs/done/10-docs-find-as-you-type.md) is a bug the Docs walk found in the built-in too. [test-files.md](wiki/test-files.md) records where every test file came from, so they can be fetched again. The resume point above is superseded by this entry.
 
 ## [2026-10-23] todo | Briefs 11 and 12 from the two walk todos
 
@@ -164,3 +164,16 @@ The owner cleared both: Sheets' formula freeze became
 [brief 13](briefs/todo/13-sheets-formulas-in-a-worker.md), and PDF's 40 ms
 first-page gap became imbatranimOS brief 182. The OS can run briefs 166 and
 167. A brief run starts on 10, 11, 12, 13 and 14, one at a time.
+
+## [2026-10-28] build | Brief 10 done: a word typed into Docs' find box stays there
+
+[Brief 10](briefs/done/10-docs-find-as-you-type.md): SuperDoc's
+`goToSearchResult` focuses the editor before selecting a match, so every key
+after the first went into the document. `d5f0631` hands focus back in the
+same task and marks the find bar `data-editor-ui-surface`, without which
+SuperDoc's overlay stops painting the selected match once the box has focus.
+Walked in imbatranimOS `31a248c`'s production image (Docker Desktop came back
+mid-run): "hello" typed key by key stayed in the box, 31 matches, Enter and
+Shift+Enter stepped and wrapped with focus kept, the document text unchanged
+and not dirty, no CSP violation or console error. The marker extends brief
+12's symptom: a focused find bar keeps every Docs window's caret painted.
