@@ -1,6 +1,6 @@
 ---
 summary: How imbatranim-office is laid out and built (brief 01): npm workspaces with one package per app, packages/shared (externals plugin, CSS rule, vendor stylesheets, OS build, fake system for tests), the kit snapshot and kit:sync, what `npm run build:os` writes to dist/os, the OS descriptor template and the test that keeps it in step with the build, and how a window gets from the OS's catalog to an app component.
-updated: 2026-10-21
+updated: 2026-10-28
 ---
 
 # Architecture
@@ -60,7 +60,10 @@ oxide and Rolldown come from npm as optional platform packages. Checked in
   is emitted as a file and loaded by a relative URL. The desktop's CSP has no
   `worker-src`, so `script-src 'self'` applies: file workers only, never blob or
   data. A worker that imports a shared module fails the build (a worker cannot
-  see the page's global).
+  see the page's global). Three today: PDF's `pdf.worker`, Sheets'
+  `xlsxWorker` (parse and save) and Sheets' `formulaWorker` (Univer's formula
+  engine, one per window, started by `univer.ts` and handed to the preset as a
+  `Worker`; brief 13).
 - **Checks** (`osOutputChecks`, after Vite's own plugins): each entry exports
   `App`; no emitted module imports a shared specifier by name or reads
   `process.env`. `define` replaces `process.env.NODE_ENV` (library mode leaves

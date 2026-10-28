@@ -204,3 +204,21 @@ imbatranimOS `31a248c`'s production image: body typing, header typing and
 brief 10's find box all went to the focused window. Only the focused window
 painted a body caret, but every window with a header session open painted
 its caret.
+
+## [2026-10-28] build | Brief 13 built: Sheets' formulas in a worker; one line fails narrowly, stays in todo
+
+[Brief 13](briefs/todo/13-sheets-formulas-in-a-worker.md): `f4b26e3`
+starts `formulaWorker.ts` as a module worker and hands it to
+`UniverSheetsCorePreset({ workerURL })`. The worker runs
+`UniverSheetsCoreWorkerPreset`, and a save waits for
+`onCalculationResultApplied`. In imbatranimOS `31a248c`'s production image,
+the 220,000-formula workbook's 6.8 s freeze after the grid is gone. One
+210–285 ms task is left (8 runs): Univer's main-thread scan for formulas
+without a value. The values workbook stays under 130 ms. Formulas recompute
+after an edit, a save 100 ms after an edit wrote the new values, opening
+does not dirty, and no CSP violation or console error came up. A scratch
+build with `CalculationMode.FORCED` had no task over 63 ms, at the price of
+the file's cached values; the owner decides. Found on the way: formulas past
+row 1000 compute `#NAME?` (no `rowCount` in the xlsx mapping), before this
+brief too ([todo](todos/2026-10-28-sheets-formulas-past-row-1000.md)).
+The owner paused the run here; brief 14 was not started.

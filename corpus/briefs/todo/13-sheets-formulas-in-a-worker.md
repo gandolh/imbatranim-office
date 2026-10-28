@@ -76,3 +76,86 @@ Constraints that bite here (see `corpus/CLAUDE.md` and
 - Opening a formula-heavy workbook does not mark it edited; an edit does.
 - No CSP violation or console error in the OS.
 - `npm run typecheck`, `npm run lint`, `npm test`, `npm run build:os` pass.
+
+## Status (2026-10-28): built, one line fails narrowly; stays in todo
+
+Built 2026-10-28 (`f4b26e3`) and walked in imbatranimOS `31a248c`'s
+production image. The run was paused before the owner's call below.
+
+**How Univer 0.25.1 does it.** `UniverSheetsCorePreset({ workerURL })`
+(`@univerjs/preset-sheets-core/lib/es/index.js`) adds
+`UniverRPCMainThreadPlugin` and passes `notExecuteFormula` to the sheets and
+formula plugins. `@univerjs/preset-sheets-core/worker` exports
+`UniverSheetsCoreWorkerPreset` (sheets with formula mutations only, the
+formula engine, `UniverRPCWorkerThreadPlugin`,
+`UniverRemoteSheetsFormulaPlugin`). The worker file boots `createUniver` with
+it. The RPC plugin (`@univerjs/rpc`) takes `string | URL | Worker` and starts
+a URL with `new Worker(url)`, a classic worker. So `univer.ts` starts
+`formulaWorker.ts` as a module worker itself, passes the `Worker`, and
+terminates it in `destroy` (Univer only terminates workers it started). The
+OS build emits `workers/formulaWorker-*.mjs` (3.0 MB), plus 78 small chunks
+the worker loads on demand; `osBuild.test.ts` checks the file and its URL.
+
+**Saving waits.** `snapshot()` awaits the formula facade's
+`onCalculationResultApplied(120 s)` (`@univerjs/sheets-formula`): it resolves
+when the latest calculation's results are in the model, or after Univer's
+500 ms start window when none runs. So an idle save waits up to 500 ms.
+Past 120 s the save fails like any other and the workbook stays dirty.
+`Sheets.tsx` awaits it, which is one change outside this brief's files and
+which step 4 needs. Walked: A1 typed and Ctrl+S 100 ms later saved
+C1 `=A1*B1` as 21, D1 `=C1+1` as 22, and a `SUM` 2,000 rows down updated
+(openpyxl, `data_only`).
+
+**Acceptance, line by line** (headless Chrome, a `longtask`
+PerformanceObserver, a fresh browser per run, the grid counted from the
+moment the loading note goes):
+
+- **Fails narrowly: the formula workbook.** The 10.3 MB workbook with
+  220,000 row-local formulas and no cached values. After the grid, the
+  longest task is **210–285 ms in all 8 runs**, one task, within 60 ms of the
+  grid; nothing else over 200 ms in the next 30 s. Before (`a9a054f`, same
+  machine): a **6.8 s** task, then about 200 tasks of 50–125 ms over 25 s
+  (brief 08: 5.6 s). A CPU profile names it: `TriggerCalculationController.
+  _initialExecuteFormula` → `getFormulaDirtyRanges` (`@univerjs/sheets-
+  formula`), the main-thread half scanning every formula cell for a missing
+  value under the default `initialFormulaComputing: WHEN_EMPTY`. It does not
+  move into the worker.
+- **Pass: the values workbook** (9.6 MB): longest task after the grid
+  104–129 ms (3 runs; before, 105 ms).
+- New, before the grid: the task that loads the workbook grew from 0.56 s to
+  0.72–0.86 s (one run 1.1 s), because `createWorkbook` posts the whole
+  snapshot to the formula worker (about 0.38 s of structured clone).
+  The grid appears in 4.6–6.4 s, as before (5.8 s); one cold first run after
+  the install took 41.7 s.
+- **Pass:** formulas compute (above); opening the formula workbook leaves
+  the title clean through 30 s of recalculation; an edit sets the dirty mark
+  and the save clears it; no CSP violation and no console error in any run;
+  typecheck, lint (the old CAD warning), test, build:os, format:check.
+
+The machine was shared with other agents: load average 16–33 on 16 cores
+for most runs, so the numbers are noisy.
+
+**Found, not this brief's: formulas past row 1000 compute `#NAME?`**, in the
+build before this brief too. The xlsx mapping never sets `rowCount`, so
+Univer keeps its default of 1000 rows. A single-cell reference past it
+(`=A1001*2`) computes and saves as `#NAME?`; ranges (`SUM(A$1:A2000)`) are
+right. So 95% of the big workbook's formulas errored instead of computing,
+here and in brief 08. See the todo
+[sheets-formulas-past-row-1000](../../todos/2026-10-28-sheets-formulas-past-row-1000.md).
+
+**Scratch experiments** (in a `/tmp` clone, not committed), at load average
+2–5:
+
+- `rowCount` from the data: the `#NAME?` is gone. After the grid: 238, 280,
+  366 and 396 ms tasks, one run under load at 2.7 s, and one run at 192 ms.
+- `rowCount` plus `formula: { initialFormulaComputing: 0 }`
+  (`CalculationMode.FORCED`): no main-thread scan. After the grid the longest
+  task was **50–63 ms in 3 of 3 runs** (40 s each). That nothing longer came
+  is measured; whether all results had been applied by then was not checked.
+  FORCED recalculates every formula on open and replaces the file's cached
+  values with Univer's. Where Univer lacks a function that Excel has, a value
+  Excel computed would become an error, and a save would write it.
+
+**For the owner:** accept 210–285 ms; switch to FORCED (fixes the line,
+costs the cached values); or report the scan upstream. Fix the 1000-row bug
+first in any case: it changes what the engine computes.

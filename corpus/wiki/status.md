@@ -1,5 +1,5 @@
 ---
-summary: Current snapshot (2026-10-28): all five apps built on main (Docs, CAD, Slides, Sheets, PDF) and in the descriptor template; briefs 01–09 done, all five apps walked in the OS (Sheets' formula freeze and PDF's 40 ms first-page gap cleared by the owner, fixes in brief 13 and imbatranimOS brief 182); OS retirement briefs 164–167 are ready; a brief run started 2026-10-28 on 10 (Docs find-as-you-type), 11 (CAD TRIM pick), 12 (Docs caret, waits on 10), 13 (Sheets' formulas in a worker) and 14 (CAD opens DWG through a suite server); nothing pushed.
+summary: Current snapshot (2026-10-28): all five apps built on main and walked in the OS; briefs 01–12 done (10 Docs find box, 11 CAD TRIM pick, 12 Docs caret: no SuperDoc option, the owner decides); 13 (Sheets' formulas in a worker) built and walked, one 210–285 ms task after the grid left, waits on the owner; 14 (CAD DWG through a suite server) not started; a formulas-past-row-1000 bug found (todo); run paused 2026-10-28; nothing pushed.
 updated: 2026-10-28
 ---
 
@@ -36,13 +36,22 @@ Briefs 10, 11, 13 and 14 are independent; 12 waits on 10.
 | 10 | [docs-find-as-you-type](../briefs/done/10-docs-find-as-you-type.md) | **done** (2026-10-28): focus handed back after SuperDoc's `goToSearchResult`, find bar marked as editor UI; walked in the OS (`d5f0631`) | — |
 | 11 | [cad-trim-picks-the-short-stub](../briefs/done/11-cad-trim-picks-the-short-stub.md) | **done** (2026-10-28): the object prompt passes over refused objects; TRIM and EXTEND break near-ties by the nearer end (`2c1d254`) | — |
 | 12 | [docs-one-caret-with-several-windows](../briefs/done/12-docs-one-caret-with-several-windows.md) | **done** (2026-10-28) by its step 3: SuperDoc 1.46.3 has no caret option, nothing changed; three windows walked (typing, header, find all go to the focused window; carets stay in every window with a header session open); **the owner decides** | — |
-| 13 | [sheets-formulas-in-a-worker](../briefs/todo/13-sheets-formulas-in-a-worker.md) | **todo** (filed 2026-10-28, the owner's call on brief 08's freeze; not urgent) | — |
-| 14 | [cad-opens-dwg-through-a-suite-server](../briefs/todo/14-cad-opens-dwg-through-a-suite-server.md) | **todo** (filed 2026-10-28, the owner's call): LibreDWG converts DWG to DXF on the suite's first server; spike the wasm route first, stop before changing the OS image | — |
+| 13 | [sheets-formulas-in-a-worker](../briefs/todo/13-sheets-formulas-in-a-worker.md) | **todo, built** (`f4b26e3`, walked 2026-10-28): the formula engine runs in `workers/formulaWorker-*.mjs`, the 6.8 s freeze is gone and saves wait for results; **fails narrowly:** one 210–285 ms task after the grid (Univer's main-thread `WHEN_EMPTY` scan); **the owner decides** (accept, FORCED, upstream) | the owner |
+| 14 | [cad-opens-dwg-through-a-suite-server](../briefs/todo/14-cad-opens-dwg-through-a-suite-server.md) | **todo** (filed 2026-10-28, the owner's call): LibreDWG converts DWG to DXF on the suite's first server; spike the wasm route first, stop before changing the OS image. Not started: the run was paused 2026-10-28 | — |
 
-Open todos: [Docs' caret in every window](../todos/2026-10-22-docs-caret-in-every-window.md) (brief 12 found no SuperDoc option; waits on the owner's call).
+Open todos: [Docs' caret in every window](../todos/2026-10-22-docs-caret-in-every-window.md) (brief 12 found no SuperDoc option; waits on the owner's call),
+[Sheets' formulas past row 1000](../todos/2026-10-28-sheets-formulas-past-row-1000.md) (`#NAME?`, a fidelity bug that predates brief 13).
 Test files for the walks: [test-files.md](test-files.md).
 
 ## Owed by the owner
+
+- **Sheets' formula worker** ([brief 13](../briefs/todo/13-sheets-formulas-in-a-worker.md)):
+  one 210–285 ms main-thread task remains after the grid. It is Univer's
+  scan for formulas without a value. Accept it, or switch to
+  `CalculationMode.FORCED` (no task over 63 ms in a scratch build, but every
+  formula is recalculated on open and the file's cached values are replaced),
+  or report it upstream. Fix the [row-1000 bug](../todos/2026-10-28-sheets-formulas-past-row-1000.md)
+  first: it changes what the engine computes.
 
 - **Docs' caret in several windows** ([brief 12](../briefs/done/12-docs-one-caret-with-several-windows.md)):
   SuperDoc 1.46.3 has no option to hide an instance's caret. Choose a CSS
