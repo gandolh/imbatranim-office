@@ -48,6 +48,8 @@ import { View } from './view'
 
 /** Pick box and snap aperture, CSS pixels (half-size). */
 export const PICKBOX = 5
+/** Objects this close to the nearest one (CSS px) count as a tie an `entity` prompt's `prefer` breaks. */
+export const PICK_TIE = 1.5
 export const APERTURE = 8
 /** Grips are this many pixels across. */
 export const GRIP_SIZE = 8
@@ -683,19 +685,13 @@ export class Editor {
         return this.advance({ kind: 'number', value: d })
       }
       case 'entity': {
-        const h = this.pick(screen)
-        if (!h) {
-          this.message('No object found there.')
-          return
-        }
-        const e = this.doc.entities.get(h)!
-        const why = p.filter?.(e) ?? null
-        if (why) {
-          this.message(why)
+        const h = this.pickFor(screen, world, p)
+        if (h.refused !== null) {
+          this.message(h.refused)
           return
         }
         this.echo('')
-        return this.advance({ kind: 'entity', handle: h, at: world })
+        return this.advance({ kind: 'entity', handle: h.handle, at: world })
       }
       case 'select':
         return this.selectClick(screen, world, !!mods.shift, a.picked)
@@ -782,9 +778,14 @@ export class Editor {
 
   /** The object under the cursor (nearest within the pick box), or null. */
   pick(screen: Vec): string | null {
+    return nearest(this.pickCandidates(screen))?.e.handle ?? null
+  }
+
+  /** Every selectable object within the pick box, with its distance (world units), in index order. */
+  private pickCandidates(screen: Vec): PickCandidate[] {
     const p = this.view.toWorld(screen)
     const h = PICKBOX / this.view.scale
-    let best: { handle: string; d: number } | null = null
+    const out: PickCandidate[] = []
     for (const handle of this.index.search({
       minX: p.x - h,
       minY: p.y - h,
@@ -794,9 +795,52 @@ export class Editor {
       const e = this.doc.entities.get(handle)
       if (!e || !this.selectable(e)) continue
       const d = entityDistance(e, p, this.doc.getBlock)
-      if (d <= h && (!best || d <= best.d)) best = { handle, d }
+      if (d <= h) out.push({ e, d })
     }
-    return best?.handle ?? null
+    return out
+  }
+
+  /**
+   * The answer to an `entity` prompt: the objects in the pick box its filter
+   * accepts, nearest first, and among those about as near as the nearest
+   * (within {@link PICK_TIE} px), the one its `prefer` ranks lowest. The
+   * nearest keeps the pick unless another ranks lower by more than the tie, so
+   * two parallel walls far from their ends still go to the nearer one. With
+   * nothing accepted, says why the nearest refused object was, or that there
+   * was nothing there.
+   */
+  private pickFor(
+    screen: Vec,
+    world: Vec,
+    p: Extract<Prompt, { kind: 'entity' }>
+  ): { handle: string; refused: null } | { handle: null; refused: string } {
+    const all = this.pickCandidates(screen)
+    const accepted = p.filter ? all.filter((c) => p.filter!(c.e) === null) : all
+    const first = nearest(accepted)
+    if (!first) {
+      const refused = nearest(all)
+      return {
+        handle: null,
+        refused: (refused && p.filter?.(refused.e)) || 'No object found there.',
+      }
+    }
+    if (!p.prefer) return { handle: first.e.handle, refused: null }
+    const tie = PICK_TIE / this.view.scale
+    let best = first
+    let bestRank = p.prefer(first.e, world)
+    const firstRank = bestRank
+    for (const c of accepted) {
+      if (c === first || c.d > first.d + tie) continue
+      const rank = p.prefer(c.e, world)
+      if (rank < bestRank) {
+        best = c
+        bestRank = rank
+      }
+    }
+    return {
+      handle: (firstRank - bestRank > tie ? best : first).e.handle,
+      refused: null,
+    }
   }
 
   segsOf(e: Entity): Seg[] {
@@ -1101,3 +1145,12 @@ export class Editor {
 }
 
 export { COMMANDS }
+
+type PickCandidate = { e: Entity; d: number }
+
+/** The nearest candidate; on a tie the later one, as the pick always did. */
+function nearest(cs: readonly PickCandidate[]): PickCandidate | null {
+  let best: PickCandidate | null = null
+  for (const c of cs) if (!best || c.d <= best.d) best = c
+  return best
+}

@@ -400,6 +400,123 @@ describe('commands', () => {
   })
 })
 
+describe('TRIM and EXTEND pick the short stub at a corner (brief 11)', () => {
+  /** The 10×8 room and its walls offset 0.2 inward, at the given scale (px per unit). */
+  function offsetRoom(scale: number) {
+    const ed = editor()
+    ed.view.scale = 200
+    ed.view.cx = 5
+    ed.view.cy = 4
+    drawRoom(ed)
+    const walls = lines(ed)
+    type(ed, 'O', '0.2')
+    for (const p of [P(5, 0), P(10, 4), P(5, 8), P(0, 4)]) {
+      click(ed, p)
+      click(ed, P(5, 4))
+    }
+    ed.submit('')
+    const inner = lines(ed).filter((l) => !walls.some((w) => w.handle === l.handle))
+    ed.view.scale = scale
+    return { ed, walls, inner }
+  }
+
+  /**
+   * A pick 2 px into the stub from where it meets the wall and 3 px beside it,
+   * on the room's side: the wall is nearer than the stub.
+   */
+  function nearCorner(ed: Editor, [wallEnd, into, inward]: Stub): Vec {
+    const px = 1 / ed.view.scale
+    return P(
+      wallEnd.x + (into.x * 2 + inward.x * 3) * px,
+      wallEnd.y + (into.y * 2 + inward.y * 3) * px
+    )
+  }
+
+  /** Where a 0.2 overhang meets the wall, the way along it, and the room's side of it. */
+  type Stub = [Vec, Vec, Vec]
+  const STUBS: Stub[] = [
+    [P(0, 0.2), P(1, 0), P(0, 1)],
+    [P(10, 0.2), P(-1, 0), P(0, 1)],
+    [P(9.8, 0), P(0, 1), P(-1, 0)],
+    [P(9.8, 8), P(0, -1), P(-1, 0)],
+    [P(10, 7.8), P(-1, 0), P(0, -1)],
+    [P(0, 7.8), P(1, 0), P(0, -1)],
+    [P(0.2, 8), P(0, -1), P(1, 0)],
+    [P(0.2, 0), P(0, 1), P(1, 0)],
+  ]
+
+  // The walk's stubs were 6–13 px long: 30 to 65 px per unit.
+  it.each([30, 50, 65])(
+    'trims each of the eight stubs from a pick 2 px from its corner, the wall 2 px away (%i px/unit)',
+    (scale) => {
+      const { ed, walls, inner } = offsetRoom(scale)
+      type(ed, 'TR')
+      for (const stub of STUBS) {
+        const [wallEnd] = stub
+        click(ed, nearCorner(ed, stub))
+        // The walls are untouched: the stub went, not the wall beside it.
+        for (const w of walls)
+          expect(ed.doc.entities.get(w.handle), `${wallEnd.x},${wallEnd.y}`).toBe(w)
+        expect(lines(ed)).toHaveLength(8)
+      }
+      ed.submit('')
+      const trimmed = inner.map((l) => ed.doc.entities.get(l.handle) as LineEntity)
+      expectLine(trimmed[0], 0.2, 0.2, 9.8, 0.2)
+      expectLine(trimmed[1], 9.8, 0.2, 9.8, 7.8)
+      expectLine(trimmed[2], 9.8, 7.8, 0.2, 7.8)
+      expectLine(trimmed[3], 0.2, 7.8, 0.2, 0.2)
+    }
+  )
+
+  it('trims the wall from a pick in its middle, the parallel inner wall inside the pick box', () => {
+    // At 20 px per unit the inner wall is 4 px off: both are candidates.
+    const { ed, walls, inner } = offsetRoom(20)
+    type(ed, 'TR')
+    click(ed, P(5, 0.08))
+    ed.submit('')
+    expect(ed.doc.entities.get(walls[0].handle)).not.toBe(walls[0])
+    for (const l of inner) expect(ed.doc.entities.get(l.handle)).toBe(l)
+  })
+
+  it('takes the curve beside a non-curve, not "Cannot trim that object."', () => {
+    const ed = editor()
+    type(ed, 'L', '0,0', '10,0', '', 'L', '2,-1', '2,1', '', 'L', '8,-1', '8,1', '')
+    ed.doc.add({
+      kind: 'point',
+      handle: ed.doc.newHandle(),
+      layer: '0',
+      color: 256,
+      linetype: 'ByLayer',
+      p: P(5, 0.03),
+    })
+    type(ed, 'TR')
+    click(ed, P(5, 0.02))
+    ed.submit('')
+    expect(ed.state.history).not.toContain('Cannot trim that object.')
+    const along = lines(ed).filter((l) => l.a.y === 0 && l.b.y === 0)
+    expect(along).toHaveLength(2)
+    expectLine(along[0], 0, 0, 2, 0)
+    expectLine(along[1], 8, 0, 10, 0)
+  })
+
+  it('still says why when the only thing under the pick is refused', () => {
+    const ed = editor()
+    ed.doc.add({
+      kind: 'point',
+      handle: ed.doc.newHandle(),
+      layer: '0',
+      color: 256,
+      linetype: 'ByLayer',
+      p: P(5, 5),
+    })
+    type(ed, 'TR')
+    click(ed, P(5, 5))
+    expect(ed.state.history.at(-1)).toBe('Cannot trim that object.')
+    click(ed, P(15, 15))
+    expect(ed.state.history.at(-1)).toBe('No object found there.')
+  })
+})
+
 describe('the first fit', () => {
   it('waits for a real window size before fitting the drawing', () => {
     const ed = new Editor()

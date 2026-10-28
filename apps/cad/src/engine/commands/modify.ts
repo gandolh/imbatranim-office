@@ -2,7 +2,7 @@
 import { mirroring, rotation, scaling, translation, type Affine } from '../geom/affine'
 import { extendCurve, fillet, isCurve, offsetCurve, trimCurve, type CurveShape } from '../geom/edit'
 import type { Seg } from '../geom/seg'
-import { angleFrom, dist, type Vec } from '../geom/vec'
+import { angleFrom, dist, polar, type Vec } from '../geom/vec'
 import { entityBounds, isTransformable, transformEntity, type Bounds } from '../model/geometry'
 import type { Entity } from '../model/types'
 import { formatDistance } from '../model/units'
@@ -312,6 +312,29 @@ function edgesFor(
   return list.filter((e) => e.handle !== target.handle).flatMap((e) => ctx.segsOf(e))
 }
 
+/**
+ * How far `at` is from the nearer end of a curve, for ranking TRIM and EXTEND
+ * picks: at a corner the short stub's end is right there, the long wall's
+ * far away. Circles and closed polylines have no ends and rank last.
+ */
+function nearerEndDistance(e: Entity, at: Vec): number {
+  if (!isCurve(e)) return Infinity
+  switch (e.kind) {
+    case 'line':
+      return Math.min(dist(at, e.a), dist(at, e.b))
+    case 'arc':
+      return Math.min(dist(at, polar(e.c, e.r, e.start)), dist(at, polar(e.c, e.r, e.end)))
+    case 'polyline': {
+      const first = e.vertices[0]
+      const last = e.vertices.at(-1)
+      if (e.closed || !first || !last) return Infinity
+      return Math.min(dist(at, first), dist(at, last))
+    }
+    case 'circle':
+      return Infinity
+  }
+}
+
 function* trimOrExtend(ctx: CommandContext, mode: 'trim' | 'extend'): CommandGen {
   let chosen: string[] | null = null
   const steps: { before: Entity; after: Entity[] }[] = []
@@ -326,6 +349,7 @@ function* trimOrExtend(ctx: CommandContext, mode: 'trim' | 'extend'): CommandGen
       ],
       allowNone: true,
       filter: (e) => (isCurve(e) ? null : `Cannot ${mode} that object.`),
+      prefer: nearerEndDistance,
     }
     if (pick.kind === 'none') return
     if (pick.kind === 'keyword' && pick.name === 'Undo') {

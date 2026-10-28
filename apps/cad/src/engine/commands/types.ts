@@ -46,7 +46,19 @@ export type Prompt =
       preview?: (p: Vec) => Preview
     })
   | (PromptBase & { kind: 'select' })
-  | (PromptBase & { kind: 'entity'; filter?: (e: Entity) => string | null })
+  | (PromptBase & {
+      kind: 'entity'
+      /** Why an object cannot answer, or null when it can. Refused objects are passed over. */
+      filter?: (e: Entity) => string | null
+      /**
+       * A measure in world units, lower preferred, for choosing among the
+       * objects that are about equally near the pick (within `PICK_TIE` px of
+       * the nearest). Without it the nearest wins. TRIM and EXTEND measure
+       * the distance to an object's nearer end, so a pick at a corner takes
+       * the short stub rather than the long wall beside it.
+       */
+      prefer?: (e: Entity, at: Vec) => number
+    })
   | (PromptBase & { kind: 'text'; default?: string })
   | (PromptBase & { kind: 'keyword'; keywords: Keyword[]; default?: string })
   /** Real-time pan: dragging moves the view until Enter or Esc. */
