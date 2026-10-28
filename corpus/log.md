@@ -129,3 +129,12 @@ now report their `/MaxLen`, `Forms.set` refuses longer values and the input
 stops at the limit. The re-walk saved the W-9 with both prefilled fields intact.
 
 Briefs 10 and 11 were not started: the owner paused the run on 2026-10-28.
+
+## [2026-10-28] decision | Briefs 08 and 09's failures don't hold back OS 166 and 167
+
+The owner answered both walks' questions. The formula freeze (a 10 MB workbook
+with 220,000 formulas, which the built-in shares) and PDF's first page 40 ms
+behind PDF Viewer do not hold back retiring the built-ins: OS 166 and 167 can
+run. Each fix is its own brief: here, Univer's formula engine in a worker; in
+imbatranimOS, the OS starting a kit app's import when its window opens, which
+helps every kit app. Briefs 08 and 09 move to done at the next run.
