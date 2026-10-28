@@ -1,9 +1,11 @@
 ---
 title: Sheets computes formulas past row 1000 as #NAME? and saves them so
 created: 2026-10-28
-status: open
+status: promoted
 tags: [sheets, univer, fidelity, bug]
 ---
+
+Promoted 2026-10-28 into [brief 15](../briefs/todo/15-sheets-formulas-past-row-1000.md).
 
 # Sheets computes formulas past row 1000 as #NAME?
 

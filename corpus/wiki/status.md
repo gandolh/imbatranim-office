@@ -1,5 +1,5 @@
 ---
-summary: Current snapshot (2026-10-28): all five apps built on main and walked in the OS; briefs 01–12 done (10 Docs find box, 11 CAD TRIM pick, 12 Docs caret: no SuperDoc option, the owner decides); 13 (Sheets' formulas in a worker) built and walked, one 210–285 ms task after the grid left, waits on the owner; 14 (CAD DWG through a suite server) not started; a formulas-past-row-1000 bug found (todo); run paused 2026-10-28; nothing pushed.
+summary: Current snapshot (2026-10-28): all five apps built on main and walked in the OS; briefs 01–13 done (10 Docs find box, 11 CAD TRIM pick, 12 Docs caret: no SuperDoc option, the owner lives with it; 13 Sheets' formulas in a worker, its 210–285 ms scan accepted); 15 (Sheets' formulas past row 1000, and 13's re-measure) and 14 (CAD DWG through a suite server) to build, in that order; no open todos; nothing pushed.
 updated: 2026-10-28
 ---
 
@@ -18,7 +18,7 @@ Docs is ready (OS 164, which also commits the catalog's Office entry);
 Slides is ready (07 → OS 165); Sheets and PDF are ready too (08 → OS 166,
 09 → OS 167): on 2026-10-28 the owner let the formula freeze and the 40 ms
 first-page gap through, each fix its own brief (13 here, 182 in the OS).
-Briefs 10, 11, 13 and 14 are independent; 12 waits on 10.
+Briefs 14 and 15 are independent; 15 runs first.
 
 ## Briefs
 
@@ -35,35 +35,25 @@ Briefs 10, 11, 13 and 14 are independent; 12 waits on 10.
 | 09 | [pdf-walk-in-the-os](../briefs/done/09-pdf-walk-in-the-os.md) | **done** (2026-10-28): nine lines pass; the 40 ms first-page gap (574 vs 534 ms) cleared by the owner → imbatranimOS brief 182; fixes `8880663`, `184a761` | — ; OS 167 can run |
 | 10 | [docs-find-as-you-type](../briefs/done/10-docs-find-as-you-type.md) | **done** (2026-10-28): focus handed back after SuperDoc's `goToSearchResult`, find bar marked as editor UI; walked in the OS (`d5f0631`) | — |
 | 11 | [cad-trim-picks-the-short-stub](../briefs/done/11-cad-trim-picks-the-short-stub.md) | **done** (2026-10-28): the object prompt passes over refused objects; TRIM and EXTEND break near-ties by the nearer end (`2c1d254`) | — |
-| 12 | [docs-one-caret-with-several-windows](../briefs/done/12-docs-one-caret-with-several-windows.md) | **done** (2026-10-28) by its step 3: SuperDoc 1.46.3 has no caret option, nothing changed; three windows walked (typing, header, find all go to the focused window; carets stay in every window with a header session open); **the owner decides** | — |
-| 13 | [sheets-formulas-in-a-worker](../briefs/todo/13-sheets-formulas-in-a-worker.md) | **todo, built** (`f4b26e3`, walked 2026-10-28): the formula engine runs in `workers/formulaWorker-*.mjs`, the 6.8 s freeze is gone and saves wait for results; **fails narrowly:** one 210–285 ms task after the grid (Univer's main-thread `WHEN_EMPTY` scan); **the owner decides** (accept, FORCED, upstream) | the owner |
-| 14 | [cad-opens-dwg-through-a-suite-server](../briefs/todo/14-cad-opens-dwg-through-a-suite-server.md) | **todo** (filed 2026-10-28, the owner's call): LibreDWG converts DWG to DXF on the suite's first server; spike the wasm route first, stop before changing the OS image. Not started: the run was paused 2026-10-28 | — |
+| 12 | [docs-one-caret-with-several-windows](../briefs/done/12-docs-one-caret-with-several-windows.md) | **done** (2026-10-28) by its step 3: SuperDoc 1.46.3 has no caret option, nothing changed; three windows walked (typing, header, find all go to the focused window; carets stay in every window with a header session open); the owner lives with it, a known gap ([todo](../todos/2026-10-22-docs-caret-in-every-window.md), closed) | — |
+| 13 | [sheets-formulas-in-a-worker](../briefs/done/13-sheets-formulas-in-a-worker.md) | **done** (2026-10-28, `f4b26e3`): the formula engine runs in `workers/formulaWorker-*.mjs`, the 6.8 s freeze is gone and saves wait for results; one 210–285 ms task after the grid (Univer's main-thread `WHEN_EMPTY` scan), **accepted by the owner**. Measured while the row-1000 bug made most formulas error; 15 re-measures | — |
+| 14 | [cad-opens-dwg-through-a-suite-server](../briefs/todo/14-cad-opens-dwg-through-a-suite-server.md) | **todo** (filed 2026-10-28, the owner's call): LibreDWG converts DWG to DXF on the suite's first server; spike the wasm route first, stop before changing the OS image. Runs after 15 | — |
+| 15 | [sheets-formulas-past-row-1000](../briefs/todo/15-sheets-formulas-past-row-1000.md) | **todo** (filed 2026-10-28 from a todo): `rowCount` from the data so single-cell references past row 1000 compute instead of `#NAME?`; re-measure brief 13's 220,000-formula workbook in the OS; over 1 s → a todo for the owner | — |
 
-Open todos: [Docs' caret in every window](../todos/2026-10-22-docs-caret-in-every-window.md) (brief 12 found no SuperDoc option; waits on the owner's call),
-[Sheets' formulas past row 1000](../todos/2026-10-28-sheets-formulas-past-row-1000.md) (`#NAME?`, a fidelity bug that predates brief 13).
+Open todos: none.
 Test files for the walks: [test-files.md](test-files.md).
 
 ## Owed by the owner
 
-- **Sheets' formula worker** ([brief 13](../briefs/todo/13-sheets-formulas-in-a-worker.md)):
-  one 210–285 ms main-thread task remains after the grid. It is Univer's
-  scan for formulas without a value. Accept it, or switch to
-  `CalculationMode.FORCED` (no task over 63 ms in a scratch build, but every
-  formula is recalculated on open and the file's cached values are replaced),
-  or report it upstream. Fix the [row-1000 bug](../todos/2026-10-28-sheets-formulas-past-row-1000.md)
-  first: it changes what the engine computes.
-
-- **Docs' caret in several windows** ([brief 12](../briefs/done/12-docs-one-caret-with-several-windows.md)):
-  SuperDoc 1.46.3 has no option to hide an instance's caret. Choose a CSS
-  rule on SuperDoc's caret class, an upstream issue, or living with it. Seen
-  on 2026-10-28: every window with a header or footer session open paints its
-  caret; in the body only the focused one did.
-
+- ~~Decide on the formula worker's 210–285 ms task (brief 13)~~ **answered
+  2026-10-28:** accepted; [brief 13](../briefs/done/13-sheets-formulas-in-a-worker.md)
+  is closed, and [brief 15](../briefs/todo/15-sheets-formulas-past-row-1000.md)
+  fixes the row-1000 bug and re-measures.
 - ~~Decide on the 40 ms first-page gap (brief 09)~~ **answered 2026-10-28:**
   it does not hold back OS 167. The fix is imbatranimOS brief 182: the OS
   starts a kit app's import when its window opens, which helps every kit app.
 - ~~Decide on the formula freeze (brief 08)~~ **answered 2026-10-28:** it does
-  not hold back OS 166. [Brief 13](../briefs/todo/13-sheets-formulas-in-a-worker.md) moves Univer's
+  not hold back OS 166. [Brief 13](../briefs/done/13-sheets-formulas-in-a-worker.md) moves Univer's
   formula engine into a worker, not urgent.
 - Push this repo's `main` before imbatranimOS's: the OS's Office catalog entry
   (from its brief 164) pins a commit of this repo, and the OS clones it from

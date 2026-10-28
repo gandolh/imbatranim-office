@@ -159,3 +159,18 @@ here and in brief 08. See the todo
 **For the owner:** accept 210–285 ms; switch to FORCED (fixes the line,
 costs the cached values); or report the scan upstream. Fix the 1000-row bug
 first in any case: it changes what the engine computes.
+
+## Outcome (2026-10-28): closed, the owner accepted the scan
+
+**Done.** `f4b26e3`. The owner accepted the 210–285 ms main-thread task
+after the grid (Univer's `WHEN_EMPTY` scan in
+`TriggerCalculationController._initialExecuteFormula`), so the acceptance
+line it fails is waived and the brief closes as built. No switch to
+`CalculationMode.FORCED` and no upstream report.
+
+**Caveat.** The row-1000 bug made most of the 220,000-formula workbook's
+formulas compute `#NAME?` (about 95% of them; every sheet has 22,000 rows
+and Univer saw 1,000), so the numbers above are for an engine that mostly
+erred. Brief 15 (`15-sheets-formulas-past-row-1000.md`) fixes the
+bug and re-measures this workbook in the OS the way this brief did. Its
+numbers stand on their own and do not reopen this brief.

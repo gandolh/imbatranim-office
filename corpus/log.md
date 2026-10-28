@@ -161,7 +161,7 @@ opens a `.dwg` as DXF and never saves over it: Save becomes Save as `.dxf`.
 [brief 09](briefs/done/09-pdf-walk-in-the-os.md) move to `done/` with an
 outcome note each. Their walks stand as logged on 2026-10-27 and 2026-10-28.
 The owner cleared both: Sheets' formula freeze became
-[brief 13](briefs/todo/13-sheets-formulas-in-a-worker.md), and PDF's 40 ms
+[brief 13](briefs/done/13-sheets-formulas-in-a-worker.md), and PDF's 40 ms
 first-page gap became imbatranimOS brief 182. The OS can run briefs 166 and
 167. A brief run starts on 10, 11, 12, 13 and 14, one at a time.
 
@@ -207,7 +207,7 @@ its caret.
 
 ## [2026-10-28] build | Brief 13 built: Sheets' formulas in a worker; one line fails narrowly, stays in todo
 
-[Brief 13](briefs/todo/13-sheets-formulas-in-a-worker.md): `f4b26e3`
+[Brief 13](briefs/done/13-sheets-formulas-in-a-worker.md): `f4b26e3`
 starts `formulaWorker.ts` as a module worker and hands it to
 `UniverSheetsCorePreset({ workerURL })`. The worker runs
 `UniverSheetsCoreWorkerPreset`, and a save waits for
@@ -222,3 +222,18 @@ the file's cached values; the owner decides. Found on the way: formulas past
 row 1000 compute `#NAME?` (no `rowCount` in the xlsx mapping), before this
 brief too ([todo](todos/2026-10-28-sheets-formulas-past-row-1000.md)).
 The owner paused the run here; brief 14 was not started.
+
+## [2026-10-28] decision | Brief 13 accepted and closed, Docs' caret lived with, the row-1000 bug becomes brief 15
+
+The owner answered the two questions left by briefs 12 and 13. The 210–285 ms
+main-thread task after the grid that Univer's formula scan leaves in
+[brief 13](briefs/done/13-sheets-formulas-in-a-worker.md) is accepted; the
+brief moves to done, with no switch to `CalculationMode.FORCED` and no upstream
+report. Docs' caret in several windows (brief 12: SuperDoc has no option) is
+lived with; the [todo](todos/2026-10-22-docs-caret-in-every-window.md) closes
+as a known gap for header and footer editing. The row-1000 bug becomes
+[brief 15](briefs/todo/15-sheets-formulas-past-row-1000.md): the xlsx and CSV
+mappings set `rowCount` from the data, and brief 13's 220,000-formula workbook
+is re-measured in the OS once its formulas compute. Brief 13's numbers were
+taken while about 95% of them errored; a freeze over 1 s at low load becomes a
+todo for the owner, and brief 13 stays closed. The run goes on with 15, then 14.
