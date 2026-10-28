@@ -1,6 +1,6 @@
 ---
-summary: What is genuinely unresolved for imbatranim-office: DWG support, and which app first needs a server. (CAD's engine and Slides' save strategy were settled by briefs 03 and 04; see decisions.md.)
-updated: 2026-10-22
+summary: What is genuinely unresolved for imbatranim-office. Nothing as of 2026-10-28: the owner wants DWG opened, through a suite server converting DWG to DXF with LibreDWG, which makes CAD the first app with a server (brief to write). CAD's engine and Slides' save strategy were settled by briefs 03 and 04; see decisions.md.
+updated: 2026-10-28
 ---
 
 # Open questions
@@ -8,10 +8,9 @@ updated: 2026-10-22
 Delete a question here the moment it is answered; its history goes to
 `status.md` and `log.md`.
 
-- **DWG.** No browser reader without WebAssembly exists. A suite server could
-  convert DWG to DXF with LibreDWG (GPL-3.0, compatible with AGPL-3.0). Not
-  planned; worth a brief only if the owner works with DWG files.
-- **The first server.** No app in briefs 01–06 needs one yet: Docs, Sheets and
-  PDF already run entirely in the browser, and CAD and Slides export in the
-  browser too. The first one-off job that is too heavy for a tab (a thumbnail
-  service for Files, a conversion) creates `server/` and its own brief.
+Nothing is open. On 2026-10-28 the owner answered the last two together: they
+work with DWG files, so CAD should open them through a suite server that
+converts DWG to DXF with LibreDWG (GPL-3.0, compatible with AGPL-3.0). That
+makes CAD the first app with a `server/`. How LibreDWG runs under this repo's
+invariants (TypeScript only, no compiled binaries in the build, the OS builds
+in a container with Node and no compiler) is the brief's first step.

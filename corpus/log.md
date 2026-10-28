@@ -138,3 +138,11 @@ behind PDF Viewer do not hold back retiring the built-ins: OS 166 and 167 can
 run. Each fix is its own brief: here, Univer's formula engine in a worker; in
 imbatranimOS, the OS starting a kit app's import when its window opens, which
 helps every kit app. Briefs 08 and 09 move to done at the next run.
+
+## [2026-10-28] decision | CAD opens DWG through a suite server
+
+The owner works with DWG files and wants CAD to open them. No browser reader
+exists without WebAssembly, which the desktop's CSP forbids, so a suite server
+converts DWG to DXF with LibreDWG. It is the suite's first server, which also
+answers the "first server" question. The brief starts with how LibreDWG can run
+under the TypeScript-only, no-compiler invariants; to be written.
