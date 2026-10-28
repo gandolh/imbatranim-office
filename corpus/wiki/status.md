@@ -35,14 +35,20 @@ Briefs 10, 11, 13 and 14 are independent; 12 waits on 10.
 | 09 | [pdf-walk-in-the-os](../briefs/done/09-pdf-walk-in-the-os.md) | **done** (2026-10-28): nine lines pass; the 40 ms first-page gap (574 vs 534 ms) cleared by the owner → imbatranimOS brief 182; fixes `8880663`, `184a761` | — ; OS 167 can run |
 | 10 | [docs-find-as-you-type](../briefs/done/10-docs-find-as-you-type.md) | **done** (2026-10-28): focus handed back after SuperDoc's `goToSearchResult`, find bar marked as editor UI; walked in the OS (`d5f0631`) | — |
 | 11 | [cad-trim-picks-the-short-stub](../briefs/done/11-cad-trim-picks-the-short-stub.md) | **done** (2026-10-28): the object prompt passes over refused objects; TRIM and EXTEND break near-ties by the nearer end (`2c1d254`) | — |
-| 12 | [docs-one-caret-with-several-windows](../briefs/todo/12-docs-one-caret-with-several-windows.md) | **todo** (filed 2026-10-23) | 10 |
+| 12 | [docs-one-caret-with-several-windows](../briefs/done/12-docs-one-caret-with-several-windows.md) | **done** (2026-10-28) by its step 3: SuperDoc 1.46.3 has no caret option, nothing changed; three windows walked (typing, header, find all go to the focused window; carets stay in every window with a header session open); **the owner decides** | — |
 | 13 | [sheets-formulas-in-a-worker](../briefs/todo/13-sheets-formulas-in-a-worker.md) | **todo** (filed 2026-10-28, the owner's call on brief 08's freeze; not urgent) | — |
 | 14 | [cad-opens-dwg-through-a-suite-server](../briefs/todo/14-cad-opens-dwg-through-a-suite-server.md) | **todo** (filed 2026-10-28, the owner's call): LibreDWG converts DWG to DXF on the suite's first server; spike the wasm route first, stop before changing the OS image | — |
 
-Open todos: [Docs' caret in every window](../todos/2026-10-22-docs-caret-in-every-window.md).
+Open todos: [Docs' caret in every window](../todos/2026-10-22-docs-caret-in-every-window.md) (brief 12 found no SuperDoc option; waits on the owner's call).
 Test files for the walks: [test-files.md](test-files.md).
 
 ## Owed by the owner
+
+- **Docs' caret in several windows** ([brief 12](../briefs/done/12-docs-one-caret-with-several-windows.md)):
+  SuperDoc 1.46.3 has no option to hide an instance's caret. Choose a CSS
+  rule on SuperDoc's caret class, an upstream issue, or living with it. Seen
+  on 2026-10-28: every window with a header or footer session open paints its
+  caret; in the body only the focused one did.
 
 - ~~Decide on the 40 ms first-page gap (brief 09)~~ **answered 2026-10-28:**
   it does not hold back OS 167. The fix is imbatranimOS brief 182: the OS

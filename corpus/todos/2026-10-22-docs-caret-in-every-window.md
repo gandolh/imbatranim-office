@@ -5,7 +5,7 @@ status: promoted
 tags: [docs, superdoc, polish]
 ---
 
-Promoted 2026-10-23 into [brief 12](../briefs/todo/12-docs-one-caret-with-several-windows.md).
+Promoted 2026-10-23 into [brief 12](../briefs/done/12-docs-one-caret-with-several-windows.md).
 
 # Docs shows a blinking caret in every window when several are open
 

@@ -33,7 +33,7 @@ The in-OS walks of Slides, Sheets and PDF were cut off by a session limit, and a
 [11](briefs/done/11-cad-trim-picks-the-short-stub.md): TRIM and EXTEND rank every
 candidate in the pick box and prefer the one whose nearer end is closer to the pick,
 so a 0.2-unit stub at a corner wins over the wall; today `pick` keeps only the nearest
-and the filter runs after. [12](briefs/todo/12-docs-one-caret-with-several-windows.md):
+and the filter runs after. [12](briefs/done/12-docs-one-caret-with-several-windows.md):
 one blinking caret with several Docs windows; reading SuperDoc 1.46.3 for an option is
 step one, and if there is none it stops and reports. It runs after 10, which owns
 `apps/docs/**`.
@@ -189,3 +189,18 @@ the wall nearer, at 30, 50 and 65 px per unit. A pick in a wall's middle
 still trims the wall. Limit: a pick on a stub's outer side at 30 px per unit
 ties with the parallel wall's end, and the nearest wins. The first PDF test
 timed out at 5 s twice in full runs on a loaded machine and passed alone.
+
+## [2026-10-28] build | Brief 12 done by its step 3: SuperDoc has no caret option
+
+[Brief 12](briefs/done/12-docs-one-caret-with-several-windows.md): in
+SuperDoc 1.46.3, `PresentationEditor#updateSelection` keeps the body caret
+whenever the page's focused element is inside any `[data-editor-ui-surface]`.
+`#updateHeaderFooterSelection` paints the header and footer caret with no
+focus test at all. No option, method or exported registry controls either;
+`setDocumentMode('viewing')` clears the layer only as part of a read-only
+mode switch. Nothing in `apps/docs` changed, and the choice (CSS rule,
+upstream issue, or live with it) goes to the owner. Three windows walked in
+imbatranimOS `31a248c`'s production image: body typing, header typing and
+brief 10's find box all went to the focused window. Only the focused window
+painted a body caret, but every window with a header session open painted
+its caret.
