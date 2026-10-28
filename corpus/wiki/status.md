@@ -1,5 +1,5 @@
 ---
-summary: Current snapshot (2026-10-28): all five apps built on main (Docs, CAD, Slides, Sheets, PDF) and in the descriptor template; briefs 01–07 done, Docs, CAD and Slides walked in the OS; Sheets and PDF walked (08 and 09 in todo but cleared: the owner let through a formula freeze the built-in shares and a first page 40 ms behind PDF Viewer on 2026-10-28, each fix its own brief; five fixes in); left 10 (Docs find-as-you-type), 11 (CAD TRIM pick), 12 (Docs caret, waits on 10) and 13 (Sheets' formulas in a worker), the walks each unblocking one imbatranimOS retirement brief (165, 166 and 167 are ready); run paused 2026-10-28; nothing pushed.
+summary: Current snapshot (2026-10-28): all five apps built on main (Docs, CAD, Slides, Sheets, PDF) and in the descriptor template; briefs 01–07 done, Docs, CAD and Slides walked in the OS; Sheets and PDF walked (08 and 09 in todo but cleared: the owner let through a formula freeze the built-in shares and a first page 40 ms behind PDF Viewer on 2026-10-28, each fix its own brief; five fixes in); left 10 (Docs find-as-you-type), 11 (CAD TRIM pick), 12 (Docs caret, waits on 10), 13 (Sheets' formulas in a worker) and 14 (CAD opens DWG through a suite server), the walks each unblocking one imbatranimOS retirement brief (165, 166 and 167 are ready); run paused 2026-10-28; nothing pushed.
 updated: 2026-10-28
 ---
 
@@ -37,6 +37,7 @@ first-page gap through, each fix its own brief. Briefs 10 and 11 are independent
 | 11 | [cad-trim-picks-the-short-stub](../briefs/todo/11-cad-trim-picks-the-short-stub.md) | **todo** (filed 2026-10-23) | — |
 | 12 | [docs-one-caret-with-several-windows](../briefs/todo/12-docs-one-caret-with-several-windows.md) | **todo** (filed 2026-10-23) | 10 |
 | 13 | [sheets-formulas-in-a-worker](../briefs/todo/13-sheets-formulas-in-a-worker.md) | **todo** (filed 2026-10-28, the owner's call on brief 08's freeze; not urgent) | — |
+| 14 | [cad-opens-dwg-through-a-suite-server](../briefs/todo/14-cad-opens-dwg-through-a-suite-server.md) | **todo** (filed 2026-10-28, the owner's call): LibreDWG converts DWG to DXF on the suite's first server; spike the wasm route first, stop before changing the OS image | — |
 
 Open todos: [Docs' caret in every window](../todos/2026-10-22-docs-caret-in-every-window.md),
 [CAD's TRIM on short segments](../todos/2026-10-22-cad-trim-pick-on-short-stubs.md).

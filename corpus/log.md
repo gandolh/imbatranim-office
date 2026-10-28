@@ -146,3 +146,11 @@ exists without WebAssembly, which the desktop's CSP forbids, so a suite server
 converts DWG to DXF with LibreDWG. It is the suite's first server, which also
 answers the "first server" question. The brief starts with how LibreDWG can run
 under the TypeScript-only, no-compiler invariants; to be written.
+
+## [2026-10-28] todo | Brief 14: CAD opens DWG through the suite's first server
+
+[Brief 14](briefs/todo/14-cad-opens-dwg-through-a-suite-server.md) starts with
+a spike: LibreDWG compiled to WebAssembly from npm, run in Node on a new
+`server/` workspace, which needs no compiler and keeps wasm out of the browser.
+If that fails it stops for the owner rather than change the OS image. CAD then
+opens a `.dwg` as DXF and never saves over it: Save becomes Save as `.dxf`.
