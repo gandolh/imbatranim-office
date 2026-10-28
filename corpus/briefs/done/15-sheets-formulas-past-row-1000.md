@@ -90,3 +90,80 @@ The built-in Sheets in imbatranimOS has the same two lines
   violation or console error.
 - `npm run typecheck`, `npm run lint`, `npm test`, `npm run build:os`,
   `npm run format:check` pass.
+
+## Outcome (2026-10-28)
+
+**Done.** `028f5ca`. Every acceptance line passes or is recorded; the 1 s
+line fired once the formulas really computed, so the owner has a
+[todo](../../todos/2026-10-28-sheets-big-first-calculation.md).
+
+**The fix.** A new `apps/sheets/src/engine/extent.ts` sizes each sheet:
+`parse` notes every cell with data and every cell a formula anywhere in the
+workbook points at by a single-cell reference (its own sheet or a named one,
+`'Quoted sheet'!B3` too), and sets `rowCount` and `columnCount` from the
+furthest, never under Univer's 1,000 × 20 and never past Excel's
+1,048,576 × 16,384. Ranges are left out: Univer computes `SUM(A1:A5000)` and
+`SUM(A2500:A2600)` past the edge, checked in a headless Univer.
+`csvToUniver` gets rows for every line. String literals are skipped, so
+`INDIRECT("A5000")` past the data still computes `#NAME?` (it cannot be known
+without running it).
+
+**Tests** (`extent.test.ts`): the reference scanner (absolute, quoted and
+Unicode sheet names, ranges, `LOG10(`, `1E5`, string literals, Excel's
+bounds); the sizes `parse` and `csvToUniver` give; and the formulas run in a
+headless Univer (0.25.1's Node preset): B1001 to B1500 compute, `=A5000`,
+`=AA1+1` and `='Other sheet'!B3000` past the data compute as Excel does (0,
+1, 0), and a control without the sizes still computes `#NAME?` at B1001.
+
+**In the OS** (imbatranimOS `31a248c`'s production image, suite at the
+commit's tree, headless Chrome):
+
+- `calc-small.xlsx`: open (title clean), A1 = 7 (dirty), Ctrl+S 100 ms later
+  (clean). openpyxl reads B1001 to B2000 as 2 × A, every C row as its sum,
+  C2000 = 2,001,006. No CSP violation, no console error.
+- `big-formulas.xlsx` really computes, **once its first calculation is
+  done**: saved after it, all 220,000 values in H and I came back as numbers,
+  every one equal to `B×C` or `SUM(D:G)`; no `#NAME?`, no other error. That
+  calculation now takes 4.6–5.3 minutes after the grid (load 20–40), against
+  about 25 s when 95% of it erred. A save at 58 s, after an edit, wrote the
+  formulas with no cached values at all (see the todo).
+- **Re-measured as brief 13 did** (30 s after the grid, fresh browser each,
+  `longtask` observer). No run found the 1-minute load under 6 in 25
+  minutes, so these are at load 12–26:
+
+| Run | Load | Grid after open | Longest before the grid | Longest after | Over 200 ms after |
+|---|---|---|---|---|---|
+| 1 | 18.0 → 13.8 | 10.9 s | 1,824 ms | 693 ms | 1 |
+| 2 | 18.7 → 18.4 | 14.5 s | 1,979 ms | 611 ms | 1 |
+| 3 | 18.4 → 12.3 | 6.6 s | 1,004 ms | 287 ms | 1 |
+| 4 | 12.3 → 18.2 | 11.7 s | 2,443 ms | 893 ms | 1 |
+| 5 | 18.2 → 22.0 | 16.5 s | 2,353 ms | 785 ms | 1 |
+| 6 | 22.0 → 25.9 | 13.1 s | 1,952 ms | 1,305 ms | 1 |
+| 7 | 25.9 → 16.9 | 6.4 s | 1,059 ms | 399 ms | 1 |
+| 8 (profiled) | 14.2 → 12.4 | 12.1 s | 1,296 ms | 309 ms | 1 |
+| `big-values.xlsx` | 16.2 → 13.7 | 7.6 s | 1,157 ms | 173 ms | 0 |
+
+  Brief 13 had 210–285 ms after the grid and 0.72–0.86 s before it, at load
+  16–33. The one task after the grid is the same `WHEN_EMPTY` scan
+  (`getFormulaDirtyRanges`, `forValue`), now over 22,000 rows a sheet instead
+  of 1,000; the profile has it at 204 ms. The task before the grid is the
+  same work as brief 13's profile, `createWorkbook` posting the snapshot to
+  the formula worker (`postMessage` 43% self), with row layout
+  (`_generateRowMatrixCache`) at 1%: the load, not the new `rowCount`, is the
+  likelier cause of its length, but no same-load baseline was taken.
+- **Past brief 13's window**, two runs watched until the calculation ended:
+  15 and 2 main-thread tasks over 1 s, the longest 4.0 s and 2.7 s, in bursts
+  while the worker's results arrive (load 20–41). The profile names the RPC
+  listener's deserialization, writing the values, GC and a redraw. Over 1 s,
+  so the [todo](../../todos/2026-10-28-sheets-big-first-calculation.md) for
+  the owner has the numbers; brief 13 stays closed.
+- `far-ref.xlsx` (one `=A1048576`, so a 1,048,576-row sheet): the grid in
+  1.6–2.1 s, no task over 366 ms (2 runs, load 11–13). Scrolling it was not
+  tried.
+- Opening never set the dirty mark (calc-small; big-formulas through 40 s);
+  an edit did. No CSP violation and no console error in any of the 13 runs.
+
+Gates: typecheck, lint (the one old CAD warning), test (518 passed),
+build:os, format:check. The OS's built-in Sheets has the same two lines
+(`apps/add-ons/sheets/src/engine/xlsxMapping.ts` and `csv.ts` at `31a248c`);
+it is not fixed there and retires with OS brief 166.

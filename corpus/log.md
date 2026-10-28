@@ -232,8 +232,26 @@ brief moves to done, with no switch to `CalculationMode.FORCED` and no upstream
 report. Docs' caret in several windows (brief 12: SuperDoc has no option) is
 lived with; the [todo](todos/2026-10-22-docs-caret-in-every-window.md) closes
 as a known gap for header and footer editing. The row-1000 bug becomes
-[brief 15](briefs/todo/15-sheets-formulas-past-row-1000.md): the xlsx and CSV
+[brief 15](briefs/done/15-sheets-formulas-past-row-1000.md): the xlsx and CSV
 mappings set `rowCount` from the data, and brief 13's 220,000-formula workbook
 is re-measured in the OS once its formulas compute. Brief 13's numbers were
 taken while about 95% of them errored; a freeze over 1 s at low load becomes a
 todo for the owner, and brief 13 stays closed. The run goes on with 15, then 14.
+
+## [2026-10-28] build | Brief 15 done: formulas past row 1000 compute; the big workbook's first real calculation is a todo
+
+[Brief 15](briefs/done/15-sheets-formulas-past-row-1000.md): `028f5ca` sizes
+each sheet to its data and to every cell a formula points at (Univer's 1,000
+× 20 as the floor, Excel's grid as the ceiling), so `=A1001*2` computes
+instead of `#NAME?`. A headless Univer in the tests shows it, with a control
+that still errs without the sizes. In imbatranimOS `31a248c`'s production
+image, `calc-small.xlsx` saved B1001 to B2000 right, and `big-formulas.xlsx`
+saved all 220,000 values right once its first calculation ended, 4.6–5.3
+minutes after the grid at load 20–40. In brief 13's 30 s window the task
+after the grid is 287–1,305 ms over 8 runs at load 12–26 (no run found the
+load under 6), the same scan over 22 times the rows. Watched to the end of
+the calculation, the main thread froze 1–4 s in bursts while the results
+landed (RPC deserialization, writing values, GC, a redraw), and a save during
+it wrote no cached values: a
+[todo](todos/2026-10-28-sheets-big-first-calculation.md) for the owner.
+Brief 13 stays closed.

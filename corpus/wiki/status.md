@@ -1,5 +1,5 @@
 ---
-summary: Current snapshot (2026-10-28): all five apps built on main and walked in the OS; briefs 01–13 done (10 Docs find box, 11 CAD TRIM pick, 12 Docs caret: no SuperDoc option, the owner lives with it; 13 Sheets' formulas in a worker, its 210–285 ms scan accepted); 15 (Sheets' formulas past row 1000, and 13's re-measure) and 14 (CAD DWG through a suite server) to build, in that order; no open todos; nothing pushed.
+summary: Current snapshot (2026-10-28): all five apps built on main and walked in the OS; briefs 01–13 done (10 Docs find box, 11 CAD TRIM pick, 12 Docs caret: no SuperDoc option, the owner lives with it; 13 Sheets' formulas in a worker, its 210–285 ms scan accepted); 15 done (formulas past row 1000 compute; 13's workbook re-measured; its first real calculation freezes the window 1–4 s in bursts, a todo for the owner); 14 (CAD DWG through a suite server) next; nothing pushed.
 updated: 2026-10-28
 ---
 
@@ -38,16 +38,23 @@ Briefs 14 and 15 are independent; 15 runs first.
 | 12 | [docs-one-caret-with-several-windows](../briefs/done/12-docs-one-caret-with-several-windows.md) | **done** (2026-10-28) by its step 3: SuperDoc 1.46.3 has no caret option, nothing changed; three windows walked (typing, header, find all go to the focused window; carets stay in every window with a header session open); the owner lives with it, a known gap ([todo](../todos/2026-10-22-docs-caret-in-every-window.md), closed) | — |
 | 13 | [sheets-formulas-in-a-worker](../briefs/done/13-sheets-formulas-in-a-worker.md) | **done** (2026-10-28, `f4b26e3`): the formula engine runs in `workers/formulaWorker-*.mjs`, the 6.8 s freeze is gone and saves wait for results; one 210–285 ms task after the grid (Univer's main-thread `WHEN_EMPTY` scan), **accepted by the owner**. Measured while the row-1000 bug made most formulas error; 15 re-measures | — |
 | 14 | [cad-opens-dwg-through-a-suite-server](../briefs/todo/14-cad-opens-dwg-through-a-suite-server.md) | **todo** (filed 2026-10-28, the owner's call): LibreDWG converts DWG to DXF on the suite's first server; spike the wasm route first, stop before changing the OS image. Runs after 15 | — |
-| 15 | [sheets-formulas-past-row-1000](../briefs/todo/15-sheets-formulas-past-row-1000.md) | **todo** (filed 2026-10-28 from a todo): `rowCount` from the data so single-cell references past row 1000 compute instead of `#NAME?`; re-measure brief 13's 220,000-formula workbook in the OS; over 1 s → a todo for the owner | — |
+| 15 | [sheets-formulas-past-row-1000](../briefs/done/15-sheets-formulas-past-row-1000.md) | **done** (2026-10-28, `028f5ca`): sheets sized to their data and every cell a formula points at; all 220,000 formulas compute and save right once the first calculation ends (4.6–5.3 min, load 20–40); in brief 13's 30 s window the task after the grid is 287–1,305 ms (load 12–26); past it, 2–15 tasks over 1 s (longest 4.0 s) while results arrive → [todo](../todos/2026-10-28-sheets-big-first-calculation.md) | the owner (the todo) |
 
-Open todos: none.
+Open todos: [Sheets' big first calculation](../todos/2026-10-28-sheets-big-first-calculation.md) (1–4 s freezes while 220,000 results land; a save during it writes no cached values; the owner decides).
 Test files for the walks: [test-files.md](test-files.md).
 
 ## Owed by the owner
 
+- **Sheets' big first calculation** ([todo](../todos/2026-10-28-sheets-big-first-calculation.md),
+  from brief 15): with the row-1000 bug fixed, the 220,000-formula workbook
+  really computes, for about five minutes in the worker, and the main thread
+  freezes 1–4 s in bursts while the results land (15 and 2 tasks over 1 s in
+  two runs at load 20–40). A save during it writes no cached values. Accept
+  it, have a brief look at Univer's knobs and make a save wait for the first
+  calculation, or report it upstream.
 - ~~Decide on the formula worker's 210–285 ms task (brief 13)~~ **answered
   2026-10-28:** accepted; [brief 13](../briefs/done/13-sheets-formulas-in-a-worker.md)
-  is closed, and [brief 15](../briefs/todo/15-sheets-formulas-past-row-1000.md)
+  is closed, and [brief 15](../briefs/done/15-sheets-formulas-past-row-1000.md)
   fixes the row-1000 bug and re-measures.
 - ~~Decide on the 40 ms first-page gap (brief 09)~~ **answered 2026-10-28:**
   it does not hold back OS 167. The fix is imbatranimOS brief 182: the OS

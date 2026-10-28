@@ -20,6 +20,7 @@ stay outside the repo.
 | `3_us_main.dxf` | ezdxf repo, `examples/edgeminer/` | MIT repo; map data origin unstated | 10,053 LINEs: the frame-time file | no |
 | `0040000C01.DXF` | French cadastre, cadastre.data.gouv.fr, 2026-09-01 release, `dxf-010040000C01.tar.bz2` | Licence Ouverte (check the version) | 1,232 entities (POLYLINE, TEXT, INSERT), 110 layers | not unless the licence is checked |
 
+
 No real drawing with 10,000+ mixed entities was found; the mixed stress file
 was the cadastre sheet tiled 3×3 (11,088 entities).
 
@@ -52,7 +53,8 @@ was the cadastre sheet tiled 3×3 (11,088 entities).
 | a chart-and-merge workbook | generate with openpyxl (2 charts, 4 merged ranges) | CC0 | the lossy-save warning | yes |
 | a 10 MB workbook | generate with openpyxl (5 sheets × 20,000 rows × 9 columns, formulas, a frozen pane) | CC0 | the worker keeps the window responsive | no (size) |
 | `big-formulas.xlsx`, `big-values.xlsx` | generate with openpyxl 3.1.5 in a throwaway container (2026-10-28): 5 sheets, a frozen pane, an item text of about 35 characters, an integer, an unrounded float and four 2-decimal floats per row; then either `=B{r}*C{r}` and `=SUM(D{r}:G{r})` (22,000 rows, 220,000 formulas, no cached values, 10.3 MB) or the two results as values (20,000 rows, 9.6 MB) | CC0 | brief 13's timing | no (size) |
-| `calc-small.xlsx` | generate with openpyxl 3.1.5: A1=2, B1=3, C1 `=A1*B1`, D1 `=C1+1`, then 1,999 rows of `A{r}`, `=A{r}*2`, `=SUM(A$1:A{r})` | CC0 | formulas recompute after an edit; the save waits; the row-1000 bug | yes |
+| `calc-small.xlsx` | generate with openpyxl 3.1.5: A1=2, B1=3, C1 `=A1*B1`, D1 `=C1+1`, then 1,999 rows of `A{r}`, `=A{r}*2`, `=SUM(A$1:A{r})` | CC0 | formulas recompute after an edit; the save waits; the row-1000 bug (fixed by brief 15) | yes |
+| `far-ref.xlsx` | generate with openpyxl 3.1.5: 50 rows of `A{r}`, `=A{r}*2`, and C1 `=A1048576` | CC0 | what one reference at Excel's last row costs the grid (brief 15) | yes |
 | `edge.csv` | generate: BOM, CRLF, quoted commas and newlines, doubled quotes, `007`, 20-digit numbers, text dates, `=1+1` | CC0 | CSV fidelity | yes |
 | `fidelity.xlsx`, `styles.xlsx` | the built-in's, in `apps/sheets/src/engine/__fixtures__/` | ours | the fidelity bar | yes (already) |
 
