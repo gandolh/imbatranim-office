@@ -1,6 +1,6 @@
 ---
-summary: The locked calls behind imbatranim-office: its own repo installed as one suite descriptor, TypeScript with editing in the browser, kit apps on the desktop's shared kit, the crafts as reference only, PDF Viewer and norPDF merged, and office-* app ids, with what each rejected and why. Read before proposing an alternative; CAD's engine (dxf-viewer's parser, @tarikjabiri/dxf, Canvas 2D) and Slides saving by patching the package in place.
-updated: 2026-10-22
+summary: The locked calls behind imbatranim-office: its own repo installed as one suite descriptor, TypeScript with editing in the browser, kit apps on the desktop's shared kit, the crafts as reference only, PDF Viewer and norPDF merged, and office-* app ids, with what each rejected and why. Read before proposing an alternative; CAD's engine (dxf-viewer's parser, @tarikjabiri/dxf, Canvas 2D) and Slides saving by patching the package in place; and DWG through the suite server, LibreDWG as WebAssembly in Node, one child process per file (brief 14).
+updated: 2026-10-28
 ---
 
 # Decisions
@@ -117,3 +117,26 @@ identical and LibreOffice opened every save.
   survives untouched but cannot be edited.
 - *Consequence*: deleting a shape prunes the animations on it; deleting a slide
   removes the parts only it used.
+
+## DWG opens through the suite server: LibreDWG as WebAssembly, in Node
+_2026-10-28_ (brief 14) — CAD opens a `.dwg` by sending it to the suite's
+server, which converts it to DXF with LibreDWG and answers the DXF; CAD reads
+it with its own DXF reader. LibreDWG comes from npm as WebAssembly
+(`@mlightcad/libredwg-web` 0.8.2, GPL-3.0), runs in Node, and gets a fresh
+child process per file. The exchange is a WebSocket (`/dwg-to-dxf`), because
+the desktop proxies a service app's HTTP for GET and HEAD only. A DWG is never
+written: Save puts a `.dxf` of the same name beside it.
+Rejected: LibreDWG from Alpine (`apk add libredwg`), which changes the OS
+image; building LibreDWG's C, which needs a compiler the image lacks; any
+reader in the browser, where the CSP forbids wasm; the package's own
+`DwgDatabase` conversion, which traps on an R2000 sample and would need a DXF
+writer of our own; the ODA File Converter, a proprietary binary; a POST route,
+which the desktop's proxy does not forward.
+**Why**: the spike converted R2000, R2007 and R2018 samples in 0.4–0.85 s
+each, and CAD's reader opened all three with every entity, layer and block.
+- *Consequence*: the suite is a `service` descriptor. A server belongs to the
+  descriptor, so every Office window (Docs, Sheets, Slides, PDF as well as
+  CAD) leases it and waits for its health check, and the OS shows an error in
+  any Office window whose lease fails. See brief 14's outcome for the cost.
+- *Consequence*: one conversion takes 260–320 MB while it runs (the build
+  reserves 1 GB of wasm memory); the process ends with the file.

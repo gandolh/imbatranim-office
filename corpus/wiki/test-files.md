@@ -1,5 +1,5 @@
 ---
-summary: Where the walks' test files come from (sourced 2026-10-21 and lost with /tmp in a restart): CAD drawings, PDFs, decks, workbooks and documents, each with its source, licence and what it exercises, and which may be committed as fixtures. Re-fetch them into a scratch directory; never execute them.
+summary: Where the walks' test files come from (sourced 2026-10-21 and lost with /tmp in a restart): CAD drawings (and LibreDWG's three DWG samples), PDFs, decks, workbooks and documents, each with its source, licence and what it exercises, and which may be committed as fixtures. Re-fetch them into a scratch directory; never execute them.
 updated: 2026-10-28
 ---
 
@@ -20,6 +20,7 @@ stay outside the repo.
 | `3_us_main.dxf` | ezdxf repo, `examples/edgeminer/` | MIT repo; map data origin unstated | 10,053 LINEs: the frame-time file | no |
 | `0040000C01.DXF` | French cadastre, cadastre.data.gouv.fr, 2026-09-01 release, `dxf-010040000C01.tar.bz2` | Licence Ouverte (check the version) | 1,232 entities (POLYLINE, TEXT, INSERT), 110 layers | not unless the licence is checked |
 
+| `example_2000.dwg`, `example_2007.dwg`, `example_2018.dwg` | LibreDWG's repo, `test/test-data/` on `master`, fetched 2026-10-28 from `raw.githubusercontent.com/LibreDWG/libredwg/master/test/test-data/example_<year>.dwg`; sha256 `34574244…99be9`, `fe2d2722…5bc12`, `7bc77212…5a65a` | GPL-3.0-or-later repo; the drawing's own origin unstated | DWG through the suite server (brief 14): AC1015, AC1021 and AC1032, the same drawing (69 entities, 5 layers, 13 blocks). Set `DWG_FIXTURES` to their folder for `server/src/convert.test.ts` | no |
 
 No real drawing with 10,000+ mixed entities was found; the mixed stress file
 was the cadastre sheet tiled 3×3 (11,088 entities).

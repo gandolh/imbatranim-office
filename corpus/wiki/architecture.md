@@ -1,5 +1,5 @@
 ---
-summary: How imbatranim-office is laid out and built (brief 01): npm workspaces with one package per app, packages/shared (externals plugin, CSS rule, vendor stylesheets, OS build, fake system for tests), the kit snapshot and kit:sync, what `npm run build:os` writes to dist/os, the OS descriptor template and the test that keeps it in step with the build, and how a window gets from the OS's catalog to an app component.
+summary: How imbatranim-office is laid out and built (brief 01): npm workspaces with one package per app, packages/shared (externals plugin, CSS rule, vendor stylesheets, OS build, fake system for tests), the kit snapshot and kit:sync, what `npm run build:os` writes to dist/os, the suite's server (brief 14: server/, Fastify, run from source, the /dwg-to-dxf WebSocket), the OS descriptor template and the test that keeps it in step with the build, and how a window gets from the OS's catalog to an app component.
 updated: 2026-10-28
 ---
 
@@ -18,6 +18,7 @@ apps/<name>/                  one workspace package per app (@imbatranim-office/
   package.json                `imbatranimOffice.vendorStyles`: library CSS copied beside app.css
 packages/shared/              @imbatranim-office/shared
   src/index.ts                types for apps: the kit's KitAppProps and NativeHostContext, re-exported
+  src/dwg.ts                  @imbatranim-office/shared/dwg: the DWG exchange CAD and the server share
   src/build/                  Node only: externals, CSS rule, OS build, kit snapshot
   src/testing/                createFakeSystem, renderWithSystem: the test harness
   test/fixtures/              fixture modules and fixture repos the build tests use
@@ -27,6 +28,10 @@ vendor/imbatranim-ui/
 os/
   descriptor.template.json    the OS's catalog entry for the suite, without its pin
   README.md                   how the pinned copy is made; installing from a local checkout
+server/                       @imbatranim-office/server: the suite's one server (brief 14)
+  src/index.ts                what the desktop runs: `node server/src/index.ts`, types stripped
+  src/app.ts, convert.ts      Fastify: /health and the /dwg-to-dxf WebSocket; one child per DWG
+  src/converter.ts            the child: LibreDWG (wasm) writes the DXF, gzipped back
 tools/kit-sync.ts             npm run kit:sync
 vite.config.ts                npm run build:os (calls osBuildConfig)
 vitest.config.ts              tests; maps @imbatranim/ui to the snapshot
@@ -35,8 +40,21 @@ dist/os/                      what build:os writes and the OS serves (not commit
 
 `apps/smoke`, brief 01's throwaway app, proved a kit app opens in a window and
 was deleted by brief 02; the build fixtures under `packages/shared/test/fixtures/os`
-still prove workers and shared chunks. A `server/` workspace arrives only with the
-first app that needs a one-off job on the server.
+still prove workers and shared chunks.
+
+## The server
+
+`server/` arrived with brief 14, for CAD's DWG files, and is the descriptor's
+`server` (`node server/src/index.ts`, `PORT`, `/health`), so the suite is a
+`service` descriptor. It runs from source: Node 24 strips the types, the
+build emits nothing for it, and its dependencies are the root `node_modules`
+that `npm ci` installs (Fastify 5.12.7, @fastify/websocket 11.3.4,
+@mlightcad/libredwg-web 0.8.2). `/health` answers without loading LibreDWG,
+because every Office window waits on it. `/dwg-to-dxf` is a WebSocket: one
+binary message in (the DWG, at most 50 MB), one out (the DXF, gzipped) or a
+JSON failure, then close; the desktop's proxy forwards a service app's HTTP
+for GET and HEAD only. Conversions run one at a time, three may queue, each in
+a child process that is killed after 60 s.
 
 ## The build the OS runs
 

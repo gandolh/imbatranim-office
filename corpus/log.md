@@ -149,7 +149,7 @@ under the TypeScript-only, no-compiler invariants; to be written.
 
 ## [2026-10-28] todo | Brief 14: CAD opens DWG through the suite's first server
 
-[Brief 14](briefs/todo/14-cad-opens-dwg-through-a-suite-server.md) starts with
+[Brief 14](briefs/done/14-cad-opens-dwg-through-a-suite-server.md) starts with
 a spike: LibreDWG compiled to WebAssembly from npm, run in Node on a new
 `server/` workspace, which needs no compiler and keeps wasm out of the browser.
 If that fails it stops for the owner rather than change the OS image. CAD then
@@ -255,3 +255,22 @@ landed (RPC deserialization, writing values, GC, a redraw), and a save during
 it wrote no cached values: a
 [todo](todos/2026-10-28-sheets-big-first-calculation.md) for the owner.
 Brief 13 stays closed.
+
+## [2026-10-28] build | Brief 14 done: CAD opens DWG through the suite's first server; service or static is the owner's
+
+[Brief 14](briefs/done/14-cad-opens-dwg-through-a-suite-server.md): the spike
+passed. `@mlightcad/libredwg-web` 0.8.2, LibreDWG as WebAssembly, runs in Node
+with no compiler and writes DXF from R2000, R2007 and R2018 samples in
+0.4–0.85 s, which CAD's reader opens whole. The new `server/` (Fastify, run
+from source) takes the DWG over a `/dwg-to-dxf` WebSocket, because the
+desktop proxies a service app's HTTP for GET and HEAD only, and converts in a
+child process per file. In imbatranimOS `31a248c`'s production image the
+three opened in CAD with their layers and geometry. Save wrote a `.dxf`
+beside the `.dwg`, whose checksum never changed. With the server killed for
+good, an open CAD window said so and still opened a DXF; no CSP violation,
+and no wasm in `dist/os`. The cost: the OS leases a descriptor's server for
+every Office window, so the first one took 2.7–5.0 s instead of 1.0–1.15 s,
+and a server that cannot start crashes every Office window. Keep `service`
+or ship `static` is the owner's call ([open-questions.md](wiki/open-questions.md));
+the OS fixes are in two todos. The machine restarted mid-walk, and the walk
+was redone. After it, the owner ruled out heavy tests for the rest of the run.

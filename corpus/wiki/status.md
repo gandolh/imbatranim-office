@@ -1,5 +1,5 @@
 ---
-summary: Current snapshot (2026-10-28): all five apps built on main and walked in the OS; briefs 01–13 done (10 Docs find box, 11 CAD TRIM pick, 12 Docs caret: no SuperDoc option, the owner lives with it; 13 Sheets' formulas in a worker, its 210–285 ms scan accepted); 15 done (formulas past row 1000 compute; 13's workbook re-measured; its first real calculation freezes the window 1–4 s in bursts, a todo for the owner); 14 (CAD DWG through a suite server) next; nothing pushed.
+summary: Current snapshot (2026-10-28): all five apps built on main and walked in the OS; briefs 01–15 done (12 Docs caret lived with; 13 Sheets' formulas in a worker; 15 formulas past row 1000 compute, the big first calculation a todo; 14 CAD opens DWG through the suite's first server, LibreDWG as wasm in Node); the owner decides whether the suite stays a service descriptor (every Office window waits on the server); no brief left in todo; nothing pushed.
 updated: 2026-10-28
 ---
 
@@ -18,7 +18,7 @@ Docs is ready (OS 164, which also commits the catalog's Office entry);
 Slides is ready (07 → OS 165); Sheets and PDF are ready too (08 → OS 166,
 09 → OS 167): on 2026-10-28 the owner let the formula freeze and the 40 ms
 first-page gap through, each fix its own brief (13 here, 182 in the OS).
-Briefs 14 and 15 are independent; 15 runs first.
+No brief is left in `todo/`; the next ones wait on the owner's answers below.
 
 ## Briefs
 
@@ -37,14 +37,23 @@ Briefs 14 and 15 are independent; 15 runs first.
 | 11 | [cad-trim-picks-the-short-stub](../briefs/done/11-cad-trim-picks-the-short-stub.md) | **done** (2026-10-28): the object prompt passes over refused objects; TRIM and EXTEND break near-ties by the nearer end (`2c1d254`) | — |
 | 12 | [docs-one-caret-with-several-windows](../briefs/done/12-docs-one-caret-with-several-windows.md) | **done** (2026-10-28) by its step 3: SuperDoc 1.46.3 has no caret option, nothing changed; three windows walked (typing, header, find all go to the focused window; carets stay in every window with a header session open); the owner lives with it, a known gap ([todo](../todos/2026-10-22-docs-caret-in-every-window.md), closed) | — |
 | 13 | [sheets-formulas-in-a-worker](../briefs/done/13-sheets-formulas-in-a-worker.md) | **done** (2026-10-28, `f4b26e3`): the formula engine runs in `workers/formulaWorker-*.mjs`, the 6.8 s freeze is gone and saves wait for results; one 210–285 ms task after the grid (Univer's main-thread `WHEN_EMPTY` scan), **accepted by the owner**. Measured while the row-1000 bug made most formulas error; 15 re-measures | — |
-| 14 | [cad-opens-dwg-through-a-suite-server](../briefs/todo/14-cad-opens-dwg-through-a-suite-server.md) | **todo** (filed 2026-10-28, the owner's call): LibreDWG converts DWG to DXF on the suite's first server; spike the wasm route first, stop before changing the OS image. Runs after 15 | — |
+| 14 | [cad-opens-dwg-through-a-suite-server](../briefs/done/14-cad-opens-dwg-through-a-suite-server.md) | **done** (2026-10-28): spike passed (@mlightcad/libredwg-web 0.8.2 in Node, R2000/R2007/R2018 to DXF in 0.4–0.85 s); `server/` converts over a WebSocket, one child per file; CAD opens the three in the OS, Save writes a `.dxf` beside the untouched `.dwg`; with the server down CAD says so, but a window opened when it cannot start crashes (the server is the descriptor's) → [open question](open-questions.md) | the owner (service or static) |
 | 15 | [sheets-formulas-past-row-1000](../briefs/done/15-sheets-formulas-past-row-1000.md) | **done** (2026-10-28, `028f5ca`): sheets sized to their data and every cell a formula points at; all 220,000 formulas compute and save right once the first calculation ends (4.6–5.3 min, load 20–40); in brief 13's 30 s window the task after the grid is 287–1,305 ms (load 12–26); past it, 2–15 tasks over 1 s (longest 4.0 s) while results arrive → [todo](../todos/2026-10-28-sheets-big-first-calculation.md) | the owner (the todo) |
 
-Open todos: [Sheets' big first calculation](../todos/2026-10-28-sheets-big-first-calculation.md) (1–4 s freezes while 220,000 results land; a save during it writes no cached values; the owner decides).
+Open todos: [Sheets' big first calculation](../todos/2026-10-28-sheets-big-first-calculation.md) (1–4 s freezes while 220,000 results land; a save during it writes no cached values; the owner decides);
+[every Office window waits on the suite server](../todos/2026-10-28-os-suite-server-for-every-window.md) (an OS change, or the owner keeps the cost);
+[the OS save dialog cannot start in a folder](../todos/2026-10-28-os-save-dialog-start-folder.md) (an OS change).
 Test files for the walks: [test-files.md](test-files.md).
 
 ## Owed by the owner
 
+- **Keep the suite a `service` descriptor?** ([brief 14](../briefs/done/14-cad-opens-dwg-through-a-suite-server.md),
+  [open-questions.md](open-questions.md)): DWG works through the suite's
+  server, but the OS leases it for every Office window. The first Office
+  window of a session took 2.7–5.0 s instead of 1.0–1.15 s, and a server
+  that cannot start crashes every Office window. Keep it, ship `static`
+  without DWG, or ask the OS for a per-app or on-demand lease
+  ([todo](../todos/2026-10-28-os-suite-server-for-every-window.md)).
 - **Sheets' big first calculation** ([todo](../todos/2026-10-28-sheets-big-first-calculation.md),
   from brief 15): with the row-1000 bug fixed, the 220,000-formula workbook
   really computes, for about five minutes in the worker, and the main thread
