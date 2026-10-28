@@ -10,6 +10,9 @@
  *   new file
  * - Ctrl+S saves the top window (`useSaveHotkey`); the title carries the
  *   dirty mark and closing asks Save / Don't Save / Cancel (`useUnsavedGuard`)
+ * - a `.dwg` is converted to DXF by the suite's server (./dwg.ts) and is
+ *   never written: Save puts a `.dxf` beside it, and the window then edits
+ *   that file (brief 14)
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
@@ -25,11 +28,14 @@ import {
   useSystem,
   useUnsavedGuard,
 } from '@imbatranim/ui'
+import type { NativeHostContext } from '@imbatranim-office/shared'
+import { dwgRelease, dwgVersion } from '@imbatranim-office/shared/dwg'
 import { readDxf, type ReadReport } from '../engine/dxf/read'
 import { refuseReason } from '../engine/dxf/tags'
 import { writeDxfBytes, type WriteReport } from '../engine/dxf/write'
 import { Editor } from '../engine/editor'
 import { exportInWorker, exportRequest, type ExportKind } from '../engine/export/job'
+import { DwgOpenError, convertDwg, dwgFailureSentence, dxfBeside, isDwgPath } from './dwg'
 
 export type FileTarget = { root: string; path: string }
 
@@ -39,6 +45,8 @@ export type CadFile = {
   name: string
   target: FileTarget | null
   loading: boolean
+  /** A DWG is being converted by the suite's server. */
+  converting: boolean
   /** Why the file could not be opened (shown in the window), or null. */
   error: string | null
   dirty: boolean
@@ -94,8 +102,18 @@ function writeNote(report: WriteReport): string | null {
 const withDxf = (path: string) => (/\.dxf$/i.test(path) ? path : `${path}.dxf`)
 const stem = (name: string) => name.replace(/\.[^.]+$/, '')
 
-export function useCadFile(): CadFile {
+/** The note a converted DWG opens with. */
+function dwgNote(dwg: Uint8Array, name: string): string {
+  const version = dwgVersion(dwg)
+  const from = version ? ` (${dwgRelease(version)})` : ''
+  return `Converted from DWG${from} by LibreDWG. CAD cannot write DWG: Save puts ${fileName(dxfBeside(name))} beside it and leaves ${name} unchanged.`
+}
+
+/** `server` is the window's `host.server`: the suite's server, which converts DWG. */
+export function useCadFile(server: NativeHostContext['server'] = null): CadFile {
   const system = useSystem()
+  // The address, not the object: a new object must not reload the file.
+  const serverWs = server?.ws ?? null
   const launched = useOpenIntent()
   const { openFile, saveFile } = useFileDialog()
   const { ask: askConflict, dialog: conflictDialog } = useFileConflict()
@@ -103,6 +121,7 @@ export function useCadFile(): CadFile {
   const [editor, setEditor] = useState(() => new Editor())
   const [target, setTarget] = useState<FileTarget | null>(null)
   const [loading, setLoading] = useState(false)
+  const [converting, setConverting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [exporting, setExporting] = useState<ExportKind | null>(null)
@@ -131,32 +150,44 @@ export function useCadFile(): CadFile {
     reloadFromRef.current = null
     const source = from ? { root: from.root, path: from.path } : launched
     if (!source) return
-    const refusal = /\.dxf$/i.test(source.path)
-      ? null
-      : /\.dwg$/i.test(source.path)
-        ? 'CAD opens DXF drawings; DWG is not supported. Save it as DXF first.'
-        : 'CAD opens .dxf drawings.'
-    if (refusal) {
+    const dwg = isDwgPath(source.path)
+    if (!dwg && !/\.dxf$/i.test(source.path)) {
       /* eslint-disable-next-line react-hooks/set-state-in-effect */
-      setError(reportFileRefusal(system, refusal, { name: fileName(source.path) }))
+      setError(
+        reportFileRefusal(system, 'CAD opens .dxf and .dwg drawings.', {
+          name: fileName(source.path),
+        })
+      )
       return
     }
     let cancelled = false
+    const label = fileName(source.path)
     setLoading(true)
     setError(null)
-    system.fs.readWithVersion(source.root, source.path).then(
-      ({ bytes, version }) => {
+    const read = system.fs.readWithVersion(source.root, source.path)
+    const dxf: Promise<{ data: Uint8Array; version: string | null; note: string | null }> = dwg
+      ? read.then(async ({ bytes }) => {
+          if (cancelled) throw new DwgOpenError('failed', bytes.byteLength)
+          setConverting(true)
+          const data = await convertDwg(serverWs, bytes)
+          // A DWG is never saved over, so there is no version to save against.
+          return { data, version: null, note: dwgNote(new Uint8Array(bytes), label) }
+        })
+      : read.then(({ bytes, version }) => ({ data: new Uint8Array(bytes), version, note: null }))
+    dxf.then(
+      ({ data, version, note: opened }) => {
         if (cancelled) return
-        const data = new Uint8Array(bytes)
-        const why = refuseReason(data)
+        setConverting(false)
+        const why = dwg ? null : refuseReason(data)
         if (why) {
-          setError(reportFileRefusal(system, why, { name: fileName(source.path) }))
+          setError(reportFileRefusal(system, why, { name: label }))
           setLoading(false)
           return
         }
         try {
           const { doc, report } = readDxf(data)
           const next = new Editor(doc)
+          if (opened) next.message(opened)
           const note = readNote(report)
           if (note) next.message(note)
           diskVersionRef.current = version
@@ -174,16 +205,22 @@ export function useCadFile(): CadFile {
       },
       (err: unknown) => {
         if (cancelled) return
-        setError(
-          reportFileFailure(system, 'open', err, { noun: 'drawing', name: fileName(source.path) })
-        )
+        setConverting(false)
+        if (err instanceof DwgOpenError) {
+          // Not a bug to log: the server is down, or the file is one it cannot read.
+          const sentence = dwgFailureSentence(err, label)
+          system.notify({ level: 'error', title: 'Could not open', body: sentence })
+          setError(sentence)
+        } else {
+          setError(reportFileFailure(system, 'open', err, { noun: 'drawing', name: label }))
+        }
         setLoading(false)
       }
     )
     return () => {
       cancelled = true
     }
-  }, [system, launched, reloadKey])
+  }, [system, launched, reloadKey, serverWs])
 
   const writeTo = useCallback(
     async (to: FileTarget, expected: string | null | undefined): Promise<boolean> => {
@@ -232,19 +269,54 @@ export function useCadFile(): CadFile {
     }
   }, [saveFile, name, writeTo, system])
 
+  /**
+   * Save a drawing opened from a DWG: CAD cannot write DWG, so it goes to a
+   * `.dxf` of the same name beside it, after saying so, and the window then
+   * edits that file. The OS's save dialog cannot start in a given folder, so
+   * the name is offered here rather than through it; Save as still picks
+   * any place.
+   */
+  const saveBesideDwg = useCallback(
+    async (dwg: FileTarget): Promise<void> => {
+      const to = { root: dwg.root, path: dxfBeside(dwg.path) }
+      const dxfName = fileName(to.path)
+      // Is there a DXF there already? Its version makes the save ask if it changes meanwhile.
+      const existing = await system.fs.readWithVersion(to.root, to.path).then(
+        ({ version }) => ({ version }),
+        () => null
+      )
+      const message = existing
+        ? `CAD cannot write DWG, so ${name} stays as it is. ${dxfName} already exists beside it and will be replaced.`
+        : `CAD cannot write DWG, so ${name} stays as it is. The drawing is saved as ${dxfName} beside it.`
+      const ok = await confirm({
+        title: 'Save as DXF',
+        message,
+        confirmLabel: existing ? 'Replace' : 'Save',
+        destructive: !!existing,
+      })
+      if (!ok) return
+      if (await writeTo(to, existing ? (existing.version ?? undefined) : undefined)) {
+        setTarget(to)
+        system.fs.recordRecent(to.root, to.path)
+      }
+    },
+    [system, name, confirm, writeTo]
+  )
+
   const save = useCallback(async () => {
     if (saving) return
     if (!target) return saveAs()
     setSaving(true)
     try {
-      await writeTo(target, diskVersionRef.current)
+      if (isDwgPath(target.path)) await saveBesideDwg(target)
+      else await writeTo(target, diskVersionRef.current)
     } catch (err) {
       // Dirty stays: the bytes did not land, so the close guard keeps the work.
       setError(reportFileFailure(system, 'save', err, { noun: 'drawing', name }))
     } finally {
       setSaving(false)
     }
-  }, [saving, target, saveAs, writeTo, system, name])
+  }, [saving, target, saveAs, saveBesideDwg, writeTo, system, name])
 
   const discardOk = useCallback(async () => {
     if (!dirty) return true
@@ -258,7 +330,7 @@ export function useCadFile(): CadFile {
 
   const open = useCallback(async () => {
     if (!(await discardOk())) return
-    await openFile({ title: 'Open drawing', extensions: ['dxf'] })
+    await openFile({ title: 'Open drawing', extensions: ['dxf', 'dwg'] })
   }, [discardOk, openFile])
 
   const newDrawing = useCallback(async () => {
@@ -308,6 +380,7 @@ export function useCadFile(): CadFile {
     name,
     target,
     loading,
+    converting,
     error,
     dirty,
     saving,

@@ -1,0 +1,15 @@
+{
+  "name": "@imbatranim-office/server",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "description": "The suite's server (brief 14): converts DWG to DXF for CAD with LibreDWG's WebAssembly build. The desktop starts it; it runs from source with Node's type stripping.",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@fastify/websocket": "11.3.4",
+    "@imbatranim-office/shared": "0.0.0",
+    "@mlightcad/libredwg-web": "0.8.2",
+    "fastify": "5.12.7"
+  }
+}

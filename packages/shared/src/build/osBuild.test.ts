@@ -256,6 +256,27 @@ describe("this repo's own build", () => {
     expect(template.sharedKit).toBe(readKitSnapshot(vendorDir).sharedKitVersion)
   })
 
+  it("runs the suite's server from source, and serves no WebAssembly", () => {
+    const template = JSON.parse(
+      readFileSync(join(repoRoot, 'os', 'descriptor.template.json'), 'utf8')
+    ) as {
+      type: string
+      server: { command: string[]; portEnv: string; health: string }
+      apps: { id: string; opens: string[] }[]
+    }
+    // Brief 14: LibreDWG's wasm runs on the server, which Node starts from
+    // the build's root with its types stripped; nothing of it is in dist/os.
+    expect(template.type).toBe('service')
+    expect(template.server).toEqual({
+      command: ['node', 'server/src/index.ts'],
+      portEnv: 'PORT',
+      health: '/health',
+    })
+    expect(existsSync(join(repoRoot, template.server.command[1]))).toBe(true)
+    expect(files(out).filter((f) => f.endsWith('.wasm'))).toEqual([])
+    expect(template.apps.find((a) => a.id === 'office-cad')?.opens).toEqual(['dxf', 'dwg'])
+  })
+
   it("builds Docs with SuperDoc loaded on first open and SuperDoc's stylesheet beside it", () => {
     const entry = readFileSync(join(out, 'docs', 'app.mjs'), 'utf8')
     const all = loaded('docs/app.mjs')

@@ -22,7 +22,7 @@ export function refuseReason(bytes: Uint8Array): string | null {
   if (head.startsWith('AutoCAD Binary DXF'))
     return 'This is a binary DXF. CAD reads ASCII DXF files only.'
   if (/^AC10\d\d/.test(head))
-    return 'This is a DWG drawing. CAD opens DXF files; save it as DXF first.'
+    return 'This is a DWG drawing with a .dxf name. Rename it to .dwg and CAD converts it.'
   const text = head.replace(/^\uFEFF/, '').trimStart()
   if (!/^(0|999)\s/.test(text)) return 'This file is not a DXF drawing.'
   return null

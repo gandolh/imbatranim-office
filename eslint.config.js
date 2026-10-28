@@ -49,8 +49,8 @@ export default defineConfig([
     },
   },
   {
-    // Build code and scripts run in Node.
-    files: ['packages/shared/src/build/**', 'tools/**', '*.config.ts'],
+    // Build code, scripts and the suite's server run in Node.
+    files: ['packages/shared/src/build/**', 'tools/**', 'server/**', '*.config.ts'],
     languageOptions: { globals: globals.node },
   },
   {

@@ -12,7 +12,24 @@ Dependencies installed from npm carry their own licences in `node_modules` and
 are not listed here. The kit snapshot in `vendor/imbatranim-ui` is imbatranimOS
 code under the same AGPL-3.0-only licence.
 
-No code has been translated from another project yet; the sections below are for test data.
+No code has been translated from another project yet; the sections below are
+for test data, and for the one dependency whose licence differs from ours.
+
+## LibreDWG, as WebAssembly (the suite server's DWG reader)
+
+- What: [`@mlightcad/libredwg-web`](https://github.com/mlightcad/libredwg-web)
+  0.8.2, installed from npm by `server/package.json`, is
+  [LibreDWG](https://www.gnu.org/software/libredwg/) compiled to WebAssembly
+  with a JavaScript wrapper. The DXF it writes names its LibreDWG build in a
+  `999` comment (`0.14.8608.68_25bfb_dirty` in 0.8.2).
+- Licences: LibreDWG is GPL-3.0-or-later; the npm package says GPL-3.0. Both
+  combine with this repository's AGPL-3.0-only under section 13 of the GPLv3
+  and the AGPLv3. Their source is at the links above; nothing of either is
+  copied into this repository.
+- Where it runs: only in `server/` (Node), one child process per conversion
+  (`server/src/converter.ts`). It is never bundled into an app: the desktop's
+  CSP forbids WebAssembly in the browser, and `npm run build:os` emits no
+  `.wasm` (a test checks).
 
 ## CADCraft: a sample drawing (CAD test fixture)
 

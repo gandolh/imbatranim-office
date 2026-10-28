@@ -117,7 +117,7 @@ export function Toolbar(p: Props) {
       aria-label="CAD tools"
     >
       <ToolButton label="New drawing" icon={FilePlus} onClick={p.onNew} />
-      <ToolButton label="Open… (DXF)" icon={FolderOpen} onClick={p.onOpen} />
+      <ToolButton label="Open… (DXF, DWG)" icon={FolderOpen} onClick={p.onOpen} />
       <ToolButton
         label="Save (Ctrl+S)"
         icon={p.saving ? Loader2 : Save}

@@ -2,6 +2,7 @@
 /// <reference types="node" />
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { gzipSync } from 'node:zlib'
 import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -331,18 +332,6 @@ describe('CAD App', () => {
     expect(fake.notifications.filter((n) => n.title === 'Exported')).toHaveLength(2)
   })
 
-  it('refuses a DWG with a sentence, not a broken window', async () => {
-    const fake = createFakeSystem({
-      files: { 'home:plan.dwg': 'AC1032 binary' },
-      intent: { root: 'home', openPath: 'plan.dwg' },
-    })
-    renderWithSystem(<App windowId="window-1" host={fakeHost()} />, fake.system)
-    await settle()
-    expect(document.body.textContent).toMatch(/DWG is not supported/)
-    expect(fake.fsCalls).toEqual([])
-    expect(fake.notifications[0]?.level).toBe('warning')
-  })
-
   it('opens the Layers dialog from LA and creates a layer', async () => {
     const fake = createFakeSystem()
     renderWithSystem(<App windowId="window-1" host={fakeHost()} />, fake.system)
@@ -368,5 +357,179 @@ describe('CAD App', () => {
       (r) => r.textContent
     )
     expect(rows.some((t) => t?.includes('WALLS'))).toBe(true)
+  })
+})
+
+/**
+ * The suite server's WebSocket as CAD sees it (brief 14): `reply` decides
+ * what comes back for the DWG that was sent.
+ */
+type Reply = { binary?: Uint8Array; text?: string; code: number }
+function stubServer(reply: (dwg: Uint8Array) => Reply) {
+  const opened: string[] = []
+  class FakeWebSocket {
+    binaryType = 'blob'
+    onopen: (() => void) | null = null
+    onmessage: ((e: { data: unknown }) => void) | null = null
+    onclose: ((e: { code: number }) => void) | null = null
+    constructor(url: string) {
+      opened.push(url)
+      setTimeout(() => this.onopen?.(), 0)
+    }
+    send(data: ArrayBuffer) {
+      const r = reply(new Uint8Array(data))
+      setTimeout(() => {
+        if (r.binary) {
+          const copy = new Uint8Array(r.binary)
+          this.onmessage?.({ data: copy.buffer })
+        }
+        if (r.text) this.onmessage?.({ data: r.text })
+        this.onclose?.({ code: r.code })
+      }, 0)
+    }
+    close() {}
+  }
+  vi.stubGlobal('WebSocket', FakeWebSocket)
+  return opened
+}
+
+const SERVER = {
+  http: 'http://localhost/api/marketplace/apps/imbatranim-office/server',
+  ws: 'ws://localhost/api/marketplace/apps/imbatranim-office/server',
+}
+const DWG = 'AC1032 a drawing the server converts'
+
+describe('CAD App with DWG', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('opens a DWG through the server, titled with the DWG’s name', async () => {
+    const sent: string[] = []
+    const opened = stubServer((dwg) => {
+      sent.push(new TextDecoder().decode(dwg))
+      return { binary: gzipSync(SMALL_DXF), code: 1000 }
+    })
+    const fake = createFakeSystem({
+      files: { 'home:Drawings/plan.dwg': DWG },
+      intent: { root: 'home', openPath: 'Drawings/plan.dwg' },
+    })
+    const view = renderWithSystem(
+      <App windowId="window-1" host={fakeHost({ server: SERVER })} />,
+      fake.system
+    )
+    await until(() => promptText().includes('Converted from DWG'))
+    expect(opened).toEqual([`${SERVER.ws}/dwg-to-dxf`])
+    expect(sent).toEqual([DWG])
+    expect(view.container.querySelector('[data-testid="cad-file-name"]')?.textContent).toBe(
+      'plan.dwg'
+    )
+    expect(promptText()).toContain('AutoCAD 2018')
+    expect(fake.recents).toContain('home:Drawings/plan.dwg')
+    // Opening is not an edit.
+    expect(fake.titles.at(-1)).toBe('plan.dwg')
+  })
+
+  it('saves a DWG drawing as a .dxf beside it and leaves the .dwg as it was', async () => {
+    stubServer(() => ({ binary: gzipSync(SMALL_DXF), code: 1000 }))
+    const fake = createFakeSystem({
+      files: { 'home:Drawings/plan.dwg': DWG },
+      intent: { root: 'home', openPath: 'Drawings/plan.dwg' },
+    })
+    const view = renderWithSystem(
+      <App windowId="window-1" host={fakeHost({ server: SERVER })} />,
+      fake.system
+    )
+    await until(() => promptText().includes('Converted from DWG'))
+    typeLine('C')
+    typeLine('5,5')
+    typeLine('2')
+    expect(fake.titles.at(-1)).toBe('plan.dwg •')
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true }))
+    })
+    await settle()
+    expect(document.body.textContent).toContain('saved as plan.dxf beside it')
+    clickButton('Save')
+    await settle()
+    await settle()
+    expect(new TextDecoder().decode(fake.files.get('home:Drawings/plan.dwg'))).toBe(DWG)
+    const saved = readDxf(fake.files.get('home:Drawings/plan.dxf')!).doc
+    expect(saved.all().some((e) => e.kind === 'circle')).toBe(true)
+    // The window now edits the DXF: its name, a clean title, and plain saves.
+    expect(view.container.querySelector('[data-testid="cad-file-name"]')?.textContent).toBe(
+      'plan.dxf'
+    )
+    expect(fake.titles.at(-1)).toBe('plan.dxf')
+  })
+
+  it('asks before replacing a .dxf already beside the DWG', async () => {
+    stubServer(() => ({ binary: gzipSync(SMALL_DXF), code: 1000 }))
+    const fake = createFakeSystem({
+      files: { 'home:plan.dwg': DWG, 'home:plan.dxf': 'an older export' },
+      intent: { root: 'home', openPath: 'plan.dwg' },
+    })
+    renderWithSystem(<App windowId="window-1" host={fakeHost({ server: SERVER })} />, fake.system)
+    await until(() => promptText().includes('Converted from DWG'))
+    typeLine('C')
+    typeLine('5,5')
+    typeLine('2')
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true }))
+    })
+    await settle()
+    expect(document.body.textContent).toContain('plan.dxf already exists beside it')
+    clickButton('Cancel')
+    await settle()
+    expect(new TextDecoder().decode(fake.files.get('home:plan.dxf'))).toBe('an older export')
+    expect(fake.titles.at(-1)).toBe('plan.dwg •')
+  })
+
+  it('says so when there is no server, and a DXF still opens', async () => {
+    const fake = createFakeSystem({
+      files: { 'home:plan.dwg': DWG },
+      intent: { root: 'home', openPath: 'plan.dwg' },
+    })
+    renderWithSystem(<App windowId="window-1" host={fakeHost()} />, fake.system)
+    await settle()
+    await settle()
+    expect(document.querySelector('[role="alert"]')?.textContent).toBe(
+      'The Office server is not answering, so plan.dwg could not be converted. DXF drawings still open.'
+    )
+    expect(fake.notifications.at(-1)?.level).toBe('error')
+  })
+
+  it('says so when the server does not answer', async () => {
+    stubServer(() => ({ code: 1006 }))
+    const fake = createFakeSystem({
+      files: { 'home:plan.dwg': DWG },
+      intent: { root: 'home', openPath: 'plan.dwg' },
+    })
+    renderWithSystem(<App windowId="window-1" host={fakeHost({ server: SERVER })} />, fake.system)
+    await until(() => !!document.querySelector('[role="alert"]'))
+    expect(document.querySelector('[role="alert"]')?.textContent).toMatch(
+      /^The Office server is not answering/
+    )
+  })
+
+  it('names the version LibreDWG could not read, and the other failures in a sentence', async () => {
+    const cases: [Reply, RegExp][] = [
+      [
+        { text: '{"error":"unreadable","version":"AC1032"}', code: 1000 },
+        /could not read plan\.dwg \(AutoCAD 2018 format\)/,
+      ],
+      [{ text: '{"error":"timeout","version":"AC1015"}', code: 1000 }, /took longer than 60 s/],
+      [{ text: '{"error":"not-dwg"}', code: 1000 }, /plan\.dwg is not a DWG drawing/],
+      [{ code: 1009 }, /CAD converts DWG drawings up to 50 MB/],
+    ]
+    for (const [reply, sentence] of cases) {
+      stubServer(() => reply)
+      const fake = createFakeSystem({
+        files: { 'home:plan.dwg': DWG },
+        intent: { root: 'home', openPath: 'plan.dwg' },
+      })
+      renderWithSystem(<App windowId="window-1" host={fakeHost({ server: SERVER })} />, fake.system)
+      await until(() => !!document.querySelector('[role="alert"]'))
+      expect(document.querySelector('[role="alert"]')?.textContent).toMatch(sentence)
+      cleanupRendered()
+    }
   })
 })

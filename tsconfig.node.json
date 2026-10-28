@@ -4,5 +4,11 @@
     "types": ["node"],
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo"
   },
-  "include": ["vite.config.ts", "vitest.config.ts", "tools", "packages/shared/src/build"]
+  "include": [
+    "vite.config.ts",
+    "vitest.config.ts",
+    "tools",
+    "packages/shared/src/build",
+    "server/src"
+  ]
 }
