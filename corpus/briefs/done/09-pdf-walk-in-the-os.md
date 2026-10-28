@@ -62,3 +62,13 @@ affected lines again.
 
 Every line passes, or the brief stays in `todo/` with the failing lines named
 in the log. The outcome says in one line whether the OS can run brief 167.
+
+## Outcome (2026-10-28)
+
+**Walked 2026-10-28 in imbatranimOS `74dfe27`'s production image; nine lines
+pass after two fixes (`8880663`, `184a761`), the timing gate fails:** the
+suite's median first page is 574 ms against PDF Viewer's 534 (7 cold runs
+each, all in the log entry of 2026-10-28 and in [pdf.md](../../wiki/pdf.md)).
+The same day the owner cleared the brief: the 40 ms gap became imbatranimOS
+brief 182 (the OS starts a kit app's import when its window opens) and does
+not hold it back. **The OS can run brief 167.**

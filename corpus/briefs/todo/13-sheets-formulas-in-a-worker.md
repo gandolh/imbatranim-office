@@ -2,7 +2,7 @@
 
 ## Context
 
-[Brief 08](08-sheets-walk-in-the-os.md) walked Sheets in the OS. Every line
+[Brief 08](../done/08-sheets-walk-in-the-os.md) walked Sheets in the OS. Every line
 passed except the 10 MB one: a 10.6 MB workbook with 220,000 row-local formulas
 blocks the main thread for 5.6 s after the grid appears (4.1 s with
 LibreOffice's cached values). The built-in Sheets blocks for 4.4 s on the same

@@ -26,7 +26,7 @@ Paused by the owner mid-run. The owner's calls for the run (2026-10-21): retire 
 
 All five apps are on `main` and in the descriptor template. **Docs** (02) walked its parity checklist in the OS; "three windows" failed in the built-in too, because SuperDoc's window-level input bridge takes keystrokes from every other instance, and `1ca83c0` fixes it in the suite by marking each instance's active editor surface. **CAD** (03) passed its spike (Canvas 2D at 60 fps on 10,053 lines, so no WebGL) and its in-OS walk: a 10×8 room drawn with typed coordinates, saved and read back by ezdxf and LibreCAD. **Slides** (04) passed its spike: a save patches the package in place, and on three real decks every untouched part came back byte identical. **Sheets** (05) needed two declared allowances for Univer's stylesheet. **PDF** (06) draws its first page in a median 237 ms against PDF Viewer's 492 ms, outside the OS. The calls for CAD's engine and Slides' save strategy are in [decisions.md](wiki/decisions.md).
 
-The in-OS walks of Slides, Sheets and PDF were cut off by a session limit, and a restart wiped the session scratch (test files, walk notes). The owner paused the run to continue brief by brief. Those walks are now [07](briefs/done/07-slides-walk-in-the-os.md), [08](briefs/todo/08-sheets-walk-in-the-os.md) and [09](briefs/todo/09-pdf-walk-in-the-os.md); [10](briefs/todo/10-docs-find-as-you-type.md) is a bug the Docs walk found in the built-in too. [test-files.md](wiki/test-files.md) records where every test file came from, so they can be fetched again. The resume point above is superseded by this entry.
+The in-OS walks of Slides, Sheets and PDF were cut off by a session limit, and a restart wiped the session scratch (test files, walk notes). The owner paused the run to continue brief by brief. Those walks are now [07](briefs/done/07-slides-walk-in-the-os.md), [08](briefs/done/08-sheets-walk-in-the-os.md) and [09](briefs/done/09-pdf-walk-in-the-os.md); [10](briefs/todo/10-docs-find-as-you-type.md) is a bug the Docs walk found in the built-in too. [test-files.md](wiki/test-files.md) records where every test file came from, so they can be fetched again. The resume point above is superseded by this entry.
 
 ## [2026-10-23] todo | Briefs 11 and 12 from the two walk todos
 
@@ -53,7 +53,7 @@ throwaway volume), not the dev profile. The OS can run its brief 165.
 
 ## [2026-10-27] build | Brief 08 walked: seven lines pass, a formula-heavy workbook freezes the window; stays in todo
 
-[Brief 08](briefs/todo/08-sheets-walk-in-the-os.md) walked Sheets in imbatranimOS
+[Brief 08](briefs/done/08-sheets-walk-in-the-os.md) walked Sheets in imbatranimOS
 `74dfe27`'s production image, with the built-in beside it. It found two
 defects, both in the built-in too, and fixed them in the suite. `e57a4ea`: an
 `.xls` opened as an empty grid that a save would write over (ExcelJS loads it
@@ -96,7 +96,7 @@ which POI does not have; the walk used `47813.xlsx` and `WithChart.xlsx`.
 
 ## [2026-10-28] build | Brief 09 walked: nine lines pass, the timing gate fails; stays in todo
 
-[Brief 09](briefs/todo/09-pdf-walk-in-the-os.md) walked PDF in imbatranimOS
+[Brief 09](briefs/done/09-pdf-walk-in-the-os.md) walked PDF in imbatranimOS
 `74dfe27`'s production image beside PDF Viewer and norPDF. **The timing gate
 fails.** From the Open With click to ink on the 36-page NIST file, a fresh
 browser per run, 7 runs each, alternating: PDF Viewer 513, 518, 521, 534, 534,
@@ -154,3 +154,13 @@ a spike: LibreDWG compiled to WebAssembly from npm, run in Node on a new
 `server/` workspace, which needs no compiler and keeps wasm out of the browser.
 If that fails it stops for the owner rather than change the OS image. CAD then
 opens a `.dwg` as DXF and never saves over it: Save becomes Save as `.dxf`.
+
+## [2026-10-28] build | Briefs 08 and 09 closed: moved to done, the owner's answers recorded
+
+[Brief 08](briefs/done/08-sheets-walk-in-the-os.md) and
+[brief 09](briefs/done/09-pdf-walk-in-the-os.md) move to `done/` with an
+outcome note each. Their walks stand as logged on 2026-10-27 and 2026-10-28.
+The owner cleared both: Sheets' formula freeze became
+[brief 13](briefs/todo/13-sheets-formulas-in-a-worker.md), and PDF's 40 ms
+first-page gap became imbatranimOS brief 182. The OS can run briefs 166 and
+167. A brief run starts on 10, 11, 12, 13 and 14, one at a time.

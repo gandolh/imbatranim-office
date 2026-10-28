@@ -60,3 +60,13 @@ affected lines again.
 
 Every line passes, or the brief stays in `todo/` with the failing lines named
 in the log. The outcome says in one line whether the OS can run brief 166.
+
+## Outcome (2026-10-28)
+
+**Walked 2026-10-27 in imbatranimOS `74dfe27`'s production image; seven lines
+pass after two fixes (`e57a4ea`, `a4b6134`), the 10 MB line fails** on a
+workbook with 220,000 formulas (main thread blocked 4–6 s, the built-in
+too). The evidence is in the log entry of 2026-10-27. On 2026-10-28 the owner
+cleared the brief: the formula freeze became
+[brief 13](../todo/13-sheets-formulas-in-a-worker.md) and does not hold it
+back. **The OS can run brief 166.**

@@ -103,7 +103,7 @@ norPDF's side:
 ## Outcome (2026-10-22)
 
 **Built in `a810d77` (+ `ded2bb6`); the in-OS walk and timing move to brief
-[09](../todo/09-pdf-walk-in-the-os.md).** norPDF and `@pdfcore/engine` moved
+[09](09-pdf-walk-in-the-os.md).** norPDF and `@pdfcore/engine` moved
 from imbatranimOS `56e23b7`, preservation tests unchanged. First inked page in
 a standalone production page, headless Chrome, cold, 5–7 runs each: a 36-page
 NIST file took a median 237 ms against PDF Viewer's 492 ms, a 48-page one 248

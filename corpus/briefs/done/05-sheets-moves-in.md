@@ -77,7 +77,7 @@ first). When it reaches parity, the OS runs brief 164 for Sheets.
 ## Outcome (2026-10-22)
 
 **Built in `592e358`; the in-OS parity walk moves to brief
-[08](../todo/08-sheets-walk-in-the-os.md).** Copied from imbatranimOS
+[08](08-sheets-walk-in-the-os.md).** Copied from imbatranimOS
 `56e23b7`; Univer 0.25.1, ExcelJS 4.4.0 and fflate 0.4.8 keep the built-in's
 pins. The xlsx worker is a file in `dist/os/workers/`. It is shared by every
 Sheets window, so it is now refcounted and stopped only when no window holds
