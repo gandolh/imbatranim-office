@@ -1,6 +1,6 @@
 ---
 summary: How CAD (brief 03) is built: the spike's picks and numbers (dxf-viewer's parser to read, @tarikjabiri/dxf to write, our own Canvas 2D renderer at 60 fps on 10k lines), the drawing model and its undo, the commands and their aliases, the snap and selection rules, files and exports, the harness, and the known gaps.
-updated: 2026-10-21
+updated: 2026-10-28
 ---
 
 # CAD
@@ -132,6 +132,11 @@ STRETCH and MOVE.
 - Selection: pick box 5 px, the nearest object wins; a window dragged or
   clicked left to right takes what is wholly inside, right to left also what
   it touches; Shift removes.
+- A command's object prompt (TRIM, FILLET, OFFSET…) passes over objects it
+  refuses, so a pick beside a point takes the curve. TRIM and EXTEND break
+  near-ties (within 1.5 px of the nearest) in favour of the object whose
+  nearer end is closer, so a pick at a corner takes the short stub, not the
+  wall beside it (brief 11).
 
 ## Files and exports
 

@@ -34,13 +34,12 @@ Briefs 10, 11, 13 and 14 are independent; 12 waits on 10.
 | 08 | [sheets-walk-in-the-os](../briefs/done/08-sheets-walk-in-the-os.md) | **done** (2026-10-28): seven lines pass; the 10 MB formula freeze, which the built-in shares, cleared by the owner → brief 13; fixes `e57a4ea`, `a4b6134` | — ; OS 166 can run |
 | 09 | [pdf-walk-in-the-os](../briefs/done/09-pdf-walk-in-the-os.md) | **done** (2026-10-28): nine lines pass; the 40 ms first-page gap (574 vs 534 ms) cleared by the owner → imbatranimOS brief 182; fixes `8880663`, `184a761` | — ; OS 167 can run |
 | 10 | [docs-find-as-you-type](../briefs/done/10-docs-find-as-you-type.md) | **done** (2026-10-28): focus handed back after SuperDoc's `goToSearchResult`, find bar marked as editor UI; walked in the OS (`d5f0631`) | — |
-| 11 | [cad-trim-picks-the-short-stub](../briefs/todo/11-cad-trim-picks-the-short-stub.md) | **todo** (filed 2026-10-23) | — |
+| 11 | [cad-trim-picks-the-short-stub](../briefs/done/11-cad-trim-picks-the-short-stub.md) | **done** (2026-10-28): the object prompt passes over refused objects; TRIM and EXTEND break near-ties by the nearer end (`2c1d254`) | — |
 | 12 | [docs-one-caret-with-several-windows](../briefs/todo/12-docs-one-caret-with-several-windows.md) | **todo** (filed 2026-10-23) | 10 |
 | 13 | [sheets-formulas-in-a-worker](../briefs/todo/13-sheets-formulas-in-a-worker.md) | **todo** (filed 2026-10-28, the owner's call on brief 08's freeze; not urgent) | — |
 | 14 | [cad-opens-dwg-through-a-suite-server](../briefs/todo/14-cad-opens-dwg-through-a-suite-server.md) | **todo** (filed 2026-10-28, the owner's call): LibreDWG converts DWG to DXF on the suite's first server; spike the wasm route first, stop before changing the OS image | — |
 
-Open todos: [Docs' caret in every window](../todos/2026-10-22-docs-caret-in-every-window.md),
-[CAD's TRIM on short segments](../todos/2026-10-22-cad-trim-pick-on-short-stubs.md).
+Open todos: [Docs' caret in every window](../todos/2026-10-22-docs-caret-in-every-window.md).
 Test files for the walks: [test-files.md](test-files.md).
 
 ## Owed by the owner

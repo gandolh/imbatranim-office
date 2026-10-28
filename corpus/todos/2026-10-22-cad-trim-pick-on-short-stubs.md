@@ -5,7 +5,7 @@ status: promoted
 tags: [cad, input]
 ---
 
-Promoted 2026-10-23 into [brief 11](../briefs/todo/11-cad-trim-picks-the-short-stub.md).
+Promoted 2026-10-23 into [brief 11](../briefs/done/11-cad-trim-picks-the-short-stub.md).
 
 # CAD's TRIM misses short segments at normal zoom
 

@@ -65,3 +65,42 @@ the piece that will go. The highlight is not in this brief.
 
 - Hover highlighting the piece TRIM will remove (worth a todo if wanted).
 - FILLET, OFFSET and selection picks.
+
+## Outcome (2026-10-28)
+
+**Done.** `2c1d254`.
+
+The `entity` prompt gained an optional `prefer(e, at)` in `types.ts`: a
+measure in world units, lower preferred. `Editor.pickFor` (`editor.ts`) takes
+every selectable object in the pick box, drops the ones the prompt's `filter`
+refuses, and starts from the nearest. With `prefer`, it looks at the objects
+within `PICK_TIE` (1.5 CSS px) of the nearest and switches to the one ranked
+lowest, but only when it ranks lower than the nearest by more than the tie.
+Without that last rule, two parallel walls far from their ends would go to
+whichever end was a fraction of a pixel closer. `pick` and the selection
+click are unchanged (nearest wins, ties to the later object).
+
+TRIM and EXTEND pass `nearerEndDistance` (`modify.ts`): the distance from the
+pick to the curve's nearer end (line, arc, open polyline), `Infinity` for
+circles and closed polylines.
+
+**Tests** (`editor.test.ts`, "TRIM and EXTEND pick the short stub at a
+corner"): the offset 10×8 room at 30, 50 and 65 px per unit (the walk's 6–13
+px stubs). Each of the eight stubs is picked 2 px in from where it meets the
+wall and 3 px beside it on the room's side, so the wall is the nearer object.
+The stub goes and the walls are untouched. The test fails at all three scales
+before the change. A pick in the middle of a wall at 20 px per unit, with the
+inner wall 4 px away and inside the pick box, trims the wall. A pick nearer a
+POINT than a line trims the line. A pick on a lone point still says "Cannot
+trim that object.", and on nothing, "No object found there."
+
+**Limit.** A pick on the outside of a stub at 30 px per unit, halfway to the
+parallel wall, is as near that wall's end as the stub's. The nearest wins
+there, and it may be the wall. EXTEND gets the same ranking, but no corner
+case of its own was found: at a corner the end it would extend is the one
+already on the wall.
+
+Gates: typecheck, lint (the one warning predates the brief), test, build:os
+and format:check pass. Under a loaded machine the first PDF test
+(`apps/pdf/src/App.test.tsx`, "draws the first page…") timed out at 5 s in
+two full runs. It passed alone three times and in the next full run.

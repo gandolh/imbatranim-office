@@ -30,7 +30,7 @@ The in-OS walks of Slides, Sheets and PDF were cut off by a session limit, and a
 
 ## [2026-10-23] todo | Briefs 11 and 12 from the two walk todos
 
-[11](briefs/todo/11-cad-trim-picks-the-short-stub.md): TRIM and EXTEND rank every
+[11](briefs/done/11-cad-trim-picks-the-short-stub.md): TRIM and EXTEND rank every
 candidate in the pick box and prefer the one whose nearer end is closer to the pick,
 so a 0.2-unit stub at a corner wins over the wall; today `pick` keeps only the nearest
 and the filter runs after. [12](briefs/todo/12-docs-one-caret-with-several-windows.md):
@@ -177,3 +177,15 @@ mid-run): "hello" typed key by key stayed in the box, 31 matches, Enter and
 Shift+Enter stepped and wrapped with focus kept, the document text unchanged
 and not dirty, no CSP violation or console error. The marker extends brief
 12's symptom: a focused find bar keeps every Docs window's caret painted.
+
+## [2026-10-28] build | Brief 11 done: TRIM picks the short stub at a corner
+
+[Brief 11](briefs/done/11-cad-trim-picks-the-short-stub.md): `2c1d254`. The
+`entity` prompt now weighs every object in the pick box. It passes over what
+its filter refuses, so a pick beside a point takes the curve, and an optional
+`prefer` breaks near-ties (1.5 px). TRIM and EXTEND prefer the nearer end, so
+the eight stubs of the offset room trim from a pick 2 px from the corner with
+the wall nearer, at 30, 50 and 65 px per unit. A pick in a wall's middle
+still trims the wall. Limit: a pick on a stub's outer side at 30 px per unit
+ties with the parallel wall's end, and the nearest wins. The first PDF test
+timed out at 5 s twice in full runs on a loaded machine and passed alone.
