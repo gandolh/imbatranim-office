@@ -16,14 +16,27 @@ type UniverCommand = { type: number; id: string }
 type UniverApi = {
   createWorkbook: (data: Partial<IWorkbookData>) => UniverWorkbook
   onCommandExecuted: (cb: (command: UniverCommand) => void) => { dispose: () => void }
+  getFormula: () => { onCalculationResultApplied: (timeout?: number) => Promise<void> }
 }
 type UniverInstance = { dispose: () => void }
+
+/**
+ * How long a save waits for formulas to finish calculating. Generous: a large
+ * workbook's first calculation takes seconds, and the engine runs in a worker,
+ * so the window stays usable while it waits.
+ */
+export const CALCULATION_WAIT_MS = 120_000
 
 export type SheetEngine = {
   /** Load a workbook snapshot into the mounted grid. */
   loadWorkbook: (data: Partial<IWorkbookData>) => void
-  /** Current workbook state as a snapshot (for serialization on save). */
-  snapshot: () => IWorkbookData | null
+  /**
+   * The workbook as a snapshot, for serialization on save, once the formula
+   * engine has applied its latest results: a save never writes a value a
+   * pending recalculation is about to change. Rejects when formulas are still
+   * calculating after {@link CALCULATION_WAIT_MS}.
+   */
+  snapshot: () => Promise<IWorkbookData | null>
   /** Fire `cb` every time the user mutates the sheet (for dirty tracking). */
   onEdit: (cb: () => void) => void
   /**
@@ -39,6 +52,13 @@ export type SheetEngine = {
 /**
  * Boot a Univer instance mounted into `container`. The presets bundle the sheet
  * UI (toolbar, formula bar, grid) so users get a real editor, not a viewer.
+ *
+ * Formulas calculate in a worker of this window's own (./formulaWorker.ts):
+ * a workbook with 220,000 formulas blocked the main thread for 5.6 s when the
+ * engine ran here (brief 08). The worker is a file of the app, started as a
+ * module, because the desktop's CSP refuses `blob:` workers, and Univer's RPC
+ * plugin would start a URL as a classic worker; it takes a `Worker` instead
+ * and then leaves its lifetime to us.
  */
 export async function createSheetEngine(container: HTMLElement): Promise<SheetEngine> {
   const [{ createUniver, defaultTheme, LocaleType, merge }, sheetsCore, enUS] = await Promise.all([
@@ -47,6 +67,9 @@ export async function createSheetEngine(container: HTMLElement): Promise<SheetEn
     import('@univerjs/preset-sheets-core/locales/en-US'),
   ])
 
+  const formulaWorker = new Worker(new URL('./formulaWorker.ts', import.meta.url), {
+    type: 'module',
+  })
   const { univer, univerAPI } = createUniver({
     locale: LocaleType.EN_US,
     locales: {
@@ -56,6 +79,7 @@ export async function createSheetEngine(container: HTMLElement): Promise<SheetEn
     presets: [
       sheetsCore.UniverSheetsCorePreset({
         container,
+        workerURL: formulaWorker,
       }),
     ],
   }) as unknown as { univer: UniverInstance; univerAPI: UniverApi }
@@ -98,7 +122,13 @@ export async function createSheetEngine(container: HTMLElement): Promise<SheetEn
         suppressEdits = false
       }, 0)
     },
-    snapshot: () => workbook?.save() ?? null,
+    snapshot: async () => {
+      if (!workbook) return null
+      // Resolves once the latest calculation's results are in the model, or
+      // after Univer's start window (500 ms) when none is running or starting.
+      await univerAPI.getFormula().onCalculationResultApplied(CALCULATION_WAIT_MS)
+      return workbook?.save() ?? null
+    },
     onEdit: (cb) => {
       editListeners.push(cb)
     },
@@ -108,6 +138,7 @@ export async function createSheetEngine(container: HTMLElement): Promise<SheetEn
       commandSub.dispose()
       workbook?.dispose()
       univer.dispose()
+      formulaWorker.terminate()
     },
   }
 }

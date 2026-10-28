@@ -293,6 +293,10 @@ describe("this repo's own build", () => {
     expect(workers).toHaveLength(1)
     expect(all).toContain(`new URL("../${workers[0]}", import.meta.url)`)
     expect(all).not.toContain('exceljs')
+    // Univer's formula engine runs in a second worker (brief 13), also a file.
+    const formula = files(out).filter((f) => /^workers\/formulaWorker-[\w-]+\.mjs$/.test(f))
+    expect(formula).toHaveLength(1)
+    expect(all).toContain(`new URL("../${formula[0]}", import.meta.url)`)
     // Univer's stylesheet, as the built-in loaded it, under the vendor rule,
     // without the one rule Sheets declares dropped.
     const [sheets] = discoverApps(repoRoot).filter((a) => a.name === 'sheets')

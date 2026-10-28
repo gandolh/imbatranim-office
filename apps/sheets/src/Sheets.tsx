@@ -146,7 +146,23 @@ export function Sheets({ windowId: _windowId }: { windowId: string }) {
   const handleSave = useCallback(async () => {
     const engine = engineRef.current
     if (!engine || !source || saving) return
-    const snapshot = engine.snapshot()
+    // Waits for a pending recalculation (formulas run in a worker), so the
+    // spinner shows from here; a timeout is reported like any failed save.
+    setSaving(true)
+    let snapshot: Awaited<ReturnType<SheetEngine['snapshot']>>
+    try {
+      snapshot = await engine.snapshot()
+    } catch (err) {
+      setError(
+        reportFileFailure(system, 'save', err, {
+          noun: 'spreadsheet',
+          name: fileName(source.path, isCsv ? 'data.csv' : 'workbook.xlsx'),
+        })
+      )
+      setSaving(false)
+      return
+    }
+    setSaving(false)
     if (!snapshot) return
 
     // CSV holds a single sheet, and `univerToCsv` writes only the first — so a
