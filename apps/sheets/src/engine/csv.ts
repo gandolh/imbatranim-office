@@ -1,4 +1,5 @@
 import type { ICellData, IWorkbookData, IWorksheetData } from '@univerjs/presets'
+import { sheetSize } from './extent'
 
 /**
  * CSV in and out, without a dependency.
@@ -117,21 +118,25 @@ function coerce(value: string): string | number {
 export function csvToUniver(text: string, sheetName = 'Sheet1'): Partial<IWorkbookData> {
   const rows = parseCsv(text)
   const cellData: Record<number, Record<number, ICellData>> = {}
+  let maxRow = 0
   let maxCol = 0
 
   rows.forEach((cols, r) => {
     cols.forEach((raw, c) => {
       if (raw === '') return
       ;(cellData[r] ||= {})[c] = { v: coerce(raw) }
+      if (r > maxRow) maxRow = r
       if (c > maxCol) maxCol = c
     })
   })
 
+  // Univer shows 1,000 rows unless told otherwise; a longer file needs room
+  // for all of them.
   const sheet: Partial<IWorksheetData> = {
     id: 'sheet-1',
     name: sheetName,
     cellData,
-    columnCount: Math.max(maxCol + 1, 20),
+    ...sheetSize(maxRow, maxCol),
   }
   return {
     id: 'imbatranim-sheets',

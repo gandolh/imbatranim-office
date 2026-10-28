@@ -12,6 +12,7 @@
 import type ExcelJS from 'exceljs'
 import type { IWorkbookData, ICellData, IStyleData, IWorksheetData } from '@univerjs/presets'
 import { inspectXlsx, type LossyFeature } from './xlsxScan'
+import { SheetExtents } from './extent'
 
 /** A parsed workbook plus what the package held that the mapping cannot carry. */
 export type ParseResult = {
@@ -231,12 +232,15 @@ export async function parse(bytes: ArrayBuffer): Promise<ParseResult> {
 
   const sheets: Record<string, Partial<IWorksheetData>> = {}
   const sheetOrder: string[] = []
+  // Each sheet must hold its data and every cell a formula points at, or the
+  // formula computes #NAME? (see extent.ts). A formula on one sheet can point
+  // at another, so the sizes are set once every sheet has been read.
+  const extents = new SheetExtents()
 
   wb.eachSheet((ws, sheetIndex) => {
     const id = `sheet-${sheetIndex}`
     sheetOrder.push(id)
     const cellData: Record<number, Record<number, ICellData>> = {}
-    let maxCol = 0
 
     ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
       row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
@@ -254,18 +258,15 @@ export async function parse(bytes: ArrayBuffer): Promise<ParseResult> {
         if (style) uc.s = style
         if (uc.v !== undefined || uc.f !== undefined || uc.s !== undefined) {
           ;(cellData[r] ||= {})[c] = uc
-          if (c > maxCol) maxCol = c
+          extents.include(ws.name, r, c)
+          if (typeof uc.f === 'string') extents.includeReferences(ws.name, uc.f)
         }
       })
     })
 
-    sheets[id] = {
-      id,
-      name: ws.name,
-      cellData,
-      columnCount: Math.max(maxCol + 1, 20),
-    }
+    sheets[id] = { id, name: ws.name, cellData }
   })
+  for (const sheet of Object.values(sheets)) Object.assign(sheet, extents.size(sheet.name ?? ''))
 
   // A truly empty workbook still needs one sheet for Univer to mount.
   if (sheetOrder.length === 0) {
