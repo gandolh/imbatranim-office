@@ -63,6 +63,9 @@ export function Docs({ windowId }: { windowId: string }) {
   const matchesRef = useRef<DocMatch[]>([])
   const [matchCount, setMatchCount] = useState(0)
   const [matchIndex, setMatchIndex] = useState(0)
+  // The 1-based index stepMatch moves from. A ref beside the state, because
+  // going to a match is a side effect, and a state updater may run twice.
+  const matchIndexRef = useRef(0)
   const [counts, setCounts] = useState({ words: 0, characters: 0, charactersNoSpaces: 0 })
 
   const docName = source ? fileName(source.path, 'document.docx') : ''
@@ -193,14 +196,18 @@ export function Docs({ windowId }: { windowId: string }) {
     setFindText(text)
     if (!engine || text.trim() === '') {
       matchesRef.current = []
+      matchIndexRef.current = 0
       setMatchCount(0)
       setMatchIndex(0)
       return
     }
     const matches = engine.search(text)
     matchesRef.current = matches
+    matchIndexRef.current = matches.length > 0 ? 1 : 0
     setMatchCount(matches.length)
-    setMatchIndex(matches.length > 0 ? 1 : 0)
+    setMatchIndex(matchIndexRef.current)
+    // Selects the first match and scrolls to it; the engine keeps focus in
+    // this box, so the next key typed lands here, not in the document.
     if (matches.length > 0) engine.goToMatch(matches[0])
   }, [])
 
@@ -208,13 +215,12 @@ export function Docs({ windowId }: { windowId: string }) {
     const engine = engineRef.current
     const matches = matchesRef.current
     if (!engine || matches.length === 0) return
-    setMatchIndex((prev) => {
-      // 1-based, wrapping — a find bar that stops at the last hit makes the user
-      // retype the query to go round again.
-      const next = ((prev - 1 + direction + matches.length) % matches.length) + 1
-      engine.goToMatch(matches[next - 1])
-      return next
-    })
+    // 1-based, wrapping — a find bar that stops at the last hit makes the user
+    // retype the query to go round again.
+    const next = ((matchIndexRef.current - 1 + direction + matches.length) % matches.length) + 1
+    matchIndexRef.current = next
+    engine.goToMatch(matches[next - 1])
+    setMatchIndex(next)
   }, [])
 
   const openFind = useCallback(() => {
@@ -368,7 +374,14 @@ export function Docs({ windowId }: { windowId: string }) {
       </div>
 
       {findOpen && (
-        <div className="border-outline-variant bg-surface-container flex items-center gap-1 border-b px-2 py-1">
+        // `data-editor-ui-surface` is SuperDoc's declarative "this is editor UI":
+        // its selection overlay keeps painting the selected match while focus
+        // sits in this bar (it clears it once neither the editor nor such a
+        // surface has focus), and its input bridge leaves the bar's keys alone.
+        <div
+          data-editor-ui-surface=""
+          className="border-outline-variant bg-surface-container flex items-center gap-1 border-b px-2 py-1"
+        >
           <Search size={12} className="text-on-surface-variant shrink-0" />
           <input
             autoFocus

@@ -32,6 +32,7 @@ const engine = vi.hoisted(() => ({
   }[],
   text: 'Hello brave new world, hello again',
   exported: 'edited bytes',
+  typedIntoDocument: '',
 }))
 
 vi.mock('@harbour-enterprises/superdoc', () => {
@@ -50,7 +51,27 @@ vi.mock('@harbour-enterprises/superdoc', () => {
     search(pattern: RegExp) {
       return [...engine.text.matchAll(pattern)].map((m) => ({ index: m.index }))
     }
-    goToSearchResult() {}
+    /**
+     * SuperDoc's command calls `editor.view.focus()` before selecting the
+     * match. The fake focuses a stand-in for the hidden ProseMirror element,
+     * and a character key that lands there is typed into the document.
+     */
+    goToSearchResult() {
+      let pm = this.options.selector.querySelector<HTMLElement>('[data-fake-prosemirror]')
+      if (!pm) {
+        pm = document.createElement('div')
+        pm.tabIndex = -1
+        pm.dataset.fakeProsemirror = ''
+        pm.addEventListener('keydown', (e) => {
+          if (e.key.length === 1) {
+            engine.typedIntoDocument += e.key
+            this.options.onEditorUpdate()
+          }
+        })
+        this.options.selector.appendChild(pm)
+      }
+      pm.focus()
+    }
     getHTML() {
       return [`<p>${engine.text}</p>`]
     }
@@ -83,6 +104,7 @@ const opened = { root: 'home', openPath: 'Documents/report.docx' }
 
 beforeEach(() => {
   engine.instances = []
+  engine.typedIntoDocument = ''
 })
 
 afterEach(() => {
@@ -265,6 +287,51 @@ describe('Docs, as a kit app', () => {
     expect(view.container.textContent).toContain('1 of 2')
     key(input!, 'Escape')
     expect(view.container.querySelector('input[aria-label="Find in document"]')).toBeNull()
+  })
+
+  it('keeps a word typed into the find box there, one key at a time, and the document clean', async () => {
+    const fake = createFakeSystem({
+      files: { 'home:Documents/report.docx': docxBytes() },
+      intent: opened,
+    })
+    const view = renderWithSystem(<App windowId="window-1" host={fakeHost()} />, fake.system)
+    await openDocument()
+    press('f')
+    const input = view.container.querySelector<HTMLInputElement>(
+      'input[aria-label="Find in document"]'
+    )!
+    input.focus()
+
+    // The browser's order: keydown on whatever has focus, then, only if that is
+    // the box, the character goes in and React sees an input event.
+    const typeKey = (name: string) => {
+      const target = document.activeElement ?? document.body
+      key(target, name)
+      if (name.length === 1 && target === input) type(input, input.value + name)
+    }
+    for (const ch of 'hello') {
+      typeKey(ch)
+      expect(document.activeElement, `after "${ch}"`).toBe(input)
+    }
+    expect(input.value).toBe('hello')
+    expect(view.container.textContent).toContain('1 of 2')
+
+    // Enter steps (and goes to the match) without leaving the box either.
+    typeKey('Enter')
+    expect(view.container.textContent).toContain('2 of 2')
+    expect(document.activeElement).toBe(input)
+    typeKey('Enter')
+    expect(view.container.textContent).toContain('1 of 2')
+    typeKey('x')
+    expect(input.value).toBe('hellox')
+
+    // jsdom has no editor: this checks that no key reached the stand-in for
+    // SuperDoc's, not that SuperDoc leaves a selection-only change clean.
+    expect(engine.typedIntoDocument).toBe('')
+    expect(fake.titles.at(-1)).toBe('report.docx')
+    // SuperDoc's selection overlay keeps painting the match while focus is in
+    // an element it reads as editor UI.
+    expect(input.closest('[data-editor-ui-surface]')).not.toBeNull()
   })
 
   it('tears SuperDoc down when the window closes', async () => {

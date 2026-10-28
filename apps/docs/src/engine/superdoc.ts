@@ -23,7 +23,10 @@ export type DocEngine = {
    * matches and when the engine has no active editor yet.
    */
   search: (text: string, opts?: { caseSensitive?: boolean }) => DocMatch[]
-  /** Scroll to and select a match returned by {@link search}. */
+  /**
+   * Scroll to and select a match returned by {@link search}, leaving focus
+   * where it was: a find box being typed into keeps the next key.
+   */
   goToMatch: (match: DocMatch) => void
   /** The document's rendered HTML, for the word count. */
   html: () => string
@@ -202,7 +205,19 @@ export async function createDocEngine(opts: CreateDocEngineOptions): Promise<Doc
       return (superdoc.search(pattern) ?? []) as DocMatch[]
     },
     goToMatch: (match) => {
+      // SuperDoc's `goToSearchResult` command calls `editor.view.focus()` before
+      // it selects the match (1.46.3, `dist/chunks/src-*.es.js`, the Search
+      // extension's commands), so in a find-as-you-type box every key after the
+      // first went into the document. Hand focus back to whatever held it, in
+      // the same task: no key event can run between the two. A selection-only
+      // transaction does not reach `onEditorUpdate` (SuperDoc emits "update" on
+      // `docChanged` only), so the document stays clean.
+      const doc = opts.editor.ownerDocument
+      const before = doc.activeElement
       superdoc.goToSearchResult(match as Parameters<typeof superdoc.goToSearchResult>[0])
+      if (before instanceof HTMLElement && before !== doc.body && doc.activeElement !== before) {
+        before.focus({ preventScroll: true })
+      }
     },
     // getHTML returns one entry per editor; a docx is one document, so join
     // rather than assume [0] — a multi-editor future would silently under-count.
